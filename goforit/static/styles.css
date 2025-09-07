@@ -105,7 +105,7 @@
     max-height: 0;
 }
 
-/* Assembly syntax highlighting */
+/* Assembly and Bytecode syntax highlighting */
 .asm-label { color: #9cdcfe; }
 .asm-mnemonic { color: #c586c0; }
 .asm-register { color: #4ec9b0; }

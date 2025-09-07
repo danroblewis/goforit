@@ -1,41 +1,45 @@
+import tempfile
 import os
 import re
-import tempfile
-from .base import run_process, CodeResult
+from .base import CodeResult, CodeOutput, run_process
+from .utils import format_hexdump
 
 async def run_java(code: str) -> CodeResult:
-    """Run Java code by compiling and executing."""
-    # Try to find the public class name
     match = re.search(r'public\s+class\s+(\w+)', code)
     if not match:
-        return CodeResult(
-            stdout="",
-            stderr="Error: No public class found in the Java code",
-            return_code=1
-        )
+        return CodeResult(stdout="", stderr="Error: No public class found in the Java code", return_code=1)
     
     class_name = match.group(1)
-    
-    # Create a temporary directory to hold our Java files
     with tempfile.TemporaryDirectory() as tmpdir:
         java_file = os.path.join(tmpdir, f"{class_name}.java")
-        
-        # Write the code to a file
         with open(java_file, 'w') as f:
             f.write(code)
         
+        # Compile the code
+        compile_result = await run_process(['javac', java_file])
+        if compile_result.return_code != 0:
+            return compile_result
+
+        # Get bytecode disassembly
+        class_file = os.path.join(tmpdir, f"{class_name}.class")
+        bytecode_result = await run_process(['javap', '-c', '-v', class_file])
+        if bytecode_result.return_code != 0:
+            return bytecode_result
+
+        # Get hexdump of class file
         try:
-            # Compile
-            compile_result = await run_process(['javac', java_file])
-            if compile_result.return_code != 0:
-                return compile_result
-            
-            # Run
-            return await run_process(['java', '-cp', tmpdir, class_name])
-        
+            with open(class_file, 'rb') as f:
+                binary_data = f.read()
+            hexdump = format_hexdump(binary_data)
         except Exception as e:
-            return CodeResult(
-                stdout="",
-                stderr=f"Failed to execute Java code: {str(e)}",
-                return_code=1
-            )
+            hexdump = f"Failed to read binary: {str(e)}"
+
+        # Run the program
+        run_result = await run_process(['java', '-cp', tmpdir, class_name])
+        
+        # Add bytecode and hexdump outputs
+        run_result.code_outputs = [
+            CodeOutput(content=bytecode_result.stdout, language="java-bytecode"),
+            CodeOutput(content=hexdump, language="hexdump")
+        ]
+        return run_result

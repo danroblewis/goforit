@@ -12,6 +12,11 @@ export function highlightAssembly(text) {
             return line;
         }
 
+        // Handle Java bytecode output
+        if (line.match(/^\s*[0-9]+:/)) {  // Lines starting with instruction offsets
+            return highlightJavaBytecode(line);
+        }
+
         // Comments (both ; and //)
         if (line.trim().startsWith(';') || line.trim().startsWith('//')) {
             return `<span class="asm-comment">${line}</span>`;
@@ -68,4 +73,45 @@ export function highlightAssembly(text) {
 
         return line;
     }).join('\n');
+}
+
+function highlightJavaBytecode(line) {
+    // Highlight instruction offset
+    line = line.replace(/^(\s*\d+:)/, '<span class="asm-number">$1</span>');
+
+    // Java bytecode instructions
+    const instructions = [
+        // Stack operations
+        'aload', 'iload', 'lload', 'fload', 'dload', 'astore', 'istore', 'lstore', 'fstore', 'dstore',
+        'dup', 'dup_x1', 'dup_x2', 'dup2', 'dup2_x1', 'dup2_x2', 'pop', 'pop2', 'swap',
+        // Arithmetic operations
+        'iadd', 'ladd', 'fadd', 'dadd', 'isub', 'lsub', 'fsub', 'dsub',
+        'imul', 'lmul', 'fmul', 'dmul', 'idiv', 'ldiv', 'fdiv', 'ddiv',
+        'irem', 'lrem', 'frem', 'drem', 'ineg', 'lneg', 'fneg', 'dneg',
+        // Control flow
+        'ifeq', 'ifne', 'iflt', 'ifge', 'ifgt', 'ifle', 'if_icmpeq', 'if_icmpne',
+        'if_icmplt', 'if_icmpge', 'if_icmpgt', 'if_icmple', 'if_acmpeq', 'if_acmpne',
+        'goto', 'jsr', 'ret', 'tableswitch', 'lookupswitch', 'ireturn', 'lreturn',
+        'freturn', 'dreturn', 'areturn', 'return',
+        // Object operations
+        'getstatic', 'putstatic', 'getfield', 'putfield', 'invokevirtual', 'invokespecial',
+        'invokestatic', 'invokeinterface', 'invokedynamic', 'new', 'newarray', 'anewarray',
+        'arraylength', 'athrow', 'checkcast', 'instanceof', 'monitorenter', 'monitorexit',
+        // Constants
+        'nop', 'aconst_null', 'iconst_m1', 'iconst_0', 'iconst_1', 'iconst_2', 'iconst_3',
+        'iconst_4', 'iconst_5', 'lconst_0', 'lconst_1', 'fconst_0', 'fconst_1', 'fconst_2',
+        'dconst_0', 'dconst_1', 'bipush', 'sipush', 'ldc'
+    ];
+
+    // Create a single regex pattern for all instructions
+    const instructionPattern = new RegExp(`\\b(${instructions.join('|')})\\b`, 'g');
+    line = line.replace(instructionPattern, '<span class="asm-mnemonic">$1</span>');
+
+    // Highlight references to the constant pool (#123)
+    line = line.replace(/#(\d+)/g, '<span class="asm-number">#$1</span>');
+
+    // Highlight type descriptors (e.g., Ljava/lang/String;)
+    line = line.replace(/([LB-Z][\w\/$]+;?)/g, '<span class="asm-directive">$1</span>');
+
+    return line;
 }
