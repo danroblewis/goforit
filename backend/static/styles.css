@@ -1,0 +1,82 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: background-color 0.3s;
+    background-color: #ffffff;
+}
+
+#root {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    overflow: hidden;
+}
+
+.editor-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+    min-width: 0;
+}
+
+#editor {
+    flex: 1;
+    min-height: 0;
+}
+
+.language-select {
+    height: 40px;
+    background-color: #1e1e1e;
+    color: white;
+    border: none;
+    padding: 0 10px;
+    font-size: 14px;
+}
+
+.output-container {
+    flex: 1;
+    background: transparent;
+    color: white;
+    padding: 20px;
+    font-family: monospace;
+    font-size: 12px;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+.code-output-block {
+    white-space: pre;
+    word-break: keep-all;
+    overflow-x: auto;
+}
+
+.output-label {
+    color: #4caf50;
+    margin-bottom: 10px;
+}
+
+.error-label {
+    color: #f44336;
+    margin-bottom: 10px;
+}
+
+/* Assembly syntax highlighting */
+.asm-addr { color: #9cdcfe; }    /* Memory addresses */
+.asm-bytes { color: #ce9178; }   /* Hex bytes */
+.asm-mnemonic { color: #c586c0; } /* Instructions like mov, add */
+.asm-comment { color: #6a9955; }  /* Comments */
+.asm-label { color: #4ec9b0; }    /* Labels and function names */
+.asm-reg { color: #9cdcfe; }      /* Registers */
+.asm-meta { color: #808080; }     /* File format info and other metadata */
+.asm-number { color: #b5cea8; }   /* Numbers in comments */
