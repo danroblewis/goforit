@@ -42,6 +42,12 @@ async def run_go(code: str) -> CodeResult:
             f.write('\n'.join(code_lines))
         write_time = time.time() - start_time
 
+        # Get GOROOT for compile -S
+        goroot_result = await run_process(['go', 'env', 'GOROOT'])
+        if goroot_result.return_code != 0:
+            return goroot_result
+        goroot = goroot_result.stdout.strip()
+
         # Build the program with -mod=mod to avoid needing go.mod
         build_start = time.time()
         executable = os.path.join(tmpdir, 'main')
@@ -70,8 +76,8 @@ async def run_go(code: str) -> CodeResult:
         
         # Create tasks for parallel execution
         tasks = [
-            # Get assembly from go tool compile
-            run_process(['go', 'tool', 'compile', '-S', main_go]),
+            # Get assembly from go tool compile, using GOROOT for imports
+            run_process(['go', 'tool', 'compile', '-I', os.path.join(goroot, 'pkg/include'), '-S', main_go]),
             # Get objdump of just our functions
             run_process(['go', 'tool', 'objdump', '-s', 'main\.', executable]),
             format_hexdump(binary_data),                 # hexdump of first 1KB
