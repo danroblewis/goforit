@@ -5,8 +5,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
+from typing import Optional, List
 
-from .language_runners import LANGUAGE_RUNNERS, CodeResult
+from .language_runners import LANGUAGE_RUNNERS, CodeResult, CodeOutput
 
 app = FastAPI()
 
@@ -30,10 +31,15 @@ class CodeRequest(BaseModel):
     code: str
     language: str
 
+class CodeOutputResponse(BaseModel):
+    content: str
+    language: Optional[str] = None
+
 class CodeResponse(BaseModel):
     stdout: str
     stderr: str
     return_code: int
+    code_outputs: List[CodeOutputResponse] = []
 
 @app.get("/")
 async def read_root():
@@ -55,7 +61,8 @@ async def evaluate(request: CodeRequest) -> CodeResponse:
     return CodeResponse(
         stdout=result.stdout,
         stderr=result.stderr,
-        return_code=result.return_code
+        return_code=result.return_code,
+        code_outputs=[CodeOutputResponse(**output.__dict__) for output in result.code_outputs]
     )
 
 @app.get("/api/last-code")

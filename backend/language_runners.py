@@ -2,12 +2,19 @@ import asyncio
 import tempfile
 import os
 from typing import Tuple, Optional
+from dataclasses import dataclass
+
+@dataclass
+class CodeOutput:
+    content: str
+    language: Optional[str] = None
 
 class CodeResult:
-    def __init__(self, stdout: str, stderr: str, return_code: int):
+    def __init__(self, stdout: str = "", stderr: str = "", return_code: int = 0, code_outputs: list[CodeOutput] = None):
         self.stdout = stdout
         self.stderr = stderr
         self.return_code = return_code
+        self.code_outputs = code_outputs or []
 
 async def run_process(cmd: list[str], input_text: Optional[str] = None, timeout: int = 2) -> CodeResult:
     try:
@@ -114,22 +121,14 @@ async def run_c_to_asm(code: str) -> CodeResult:
         # Run the program
         run_result = await run_process([executable])
         
-        # Combine assembly and program output
-        combined_output = (
-            f"{objdump_result.stdout}\n"
-            f"{'=' * 80}\n"
-            f"{run_result.stdout}"
-        )
-        
-        combined_errors = (
-            f"{compile_result.stderr}\n"
-            f"{run_result.stderr}"
-        ).strip()
-        
+        # Return assembly and program output
         return CodeResult(
-            stdout=combined_output,
-            stderr=combined_errors,
-            return_code=run_result.return_code
+            stdout=run_result.stdout,
+            stderr=run_result.stderr,
+            return_code=run_result.return_code,
+            code_outputs=[
+                CodeOutput(content=objdump_result.stdout, language="x86asm")
+            ]
         )
     
     finally:

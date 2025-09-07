@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Evaluator</title>
-    <!-- Load Monaco Editor first -->
-    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.min.css">
     <style>
         body {
             margin: 0;
@@ -41,9 +39,13 @@
             color: white;
             padding: 20px;
             font-family: monospace;
+            font-size: 12px;
             overflow: auto;
             white-space: pre-wrap;
             word-break: break-all;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
         .output-label {
             color: #4caf50;
@@ -71,18 +73,33 @@
         <div id="output" class="output-container"></div>
     </div>
 
-    <script>var require = { paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } };</script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.nls.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.js"></script>
-
     <script>
         let editor;
         let isEvaluating = false;
         let pendingEvaluation = null;
+        let monaco = null;
+
+        // Load Monaco Editor
+        function loadMonaco() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.js';
+                script.onload = () => {
+                    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
+                    require(['vs/editor/editor.main'], function(m) {
+                        monaco = m;
+                        resolve();
+                    });
+                };
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
 
         // Initialize Monaco Editor
-        function initEditor() {
+        async function initEditor() {
+            await loadMonaco();
+
             editor = monaco.editor.create(document.getElementById('editor'), {
                 value: '',
                 language: 'python',
@@ -93,7 +110,6 @@
                 backgroundColor: 'transparent'
             });
 
-            // Override the default editor background
             monaco.editor.defineTheme('custom-vs-dark', {
                 base: 'vs-dark',
                 inherit: true,
@@ -115,11 +131,9 @@
         function queueEvaluation(code) {
             const language = document.getElementById('language').value;
             
-            // If there's no evaluation in progress, start one
             if (!isEvaluating) {
                 evaluateCode(code, language);
             } else {
-                // Store the latest request
                 pendingEvaluation = { code, language };
             }
         }
@@ -132,7 +146,6 @@
                 if (data.code) {
                     editor.setValue(data.code);
                     document.getElementById('language').value = data.language;
-                    // Always use 'c' as the editor language for both C and C to Assembly
                     const editorLang = data.language === 'c_to_asm' ? 'c' : data.language;
                     monaco.editor.setModelLanguage(editor.getModel(), editorLang);
                     await queueEvaluation(data.code);
@@ -157,16 +170,17 @@
                 updateOutput(result);
                 updateBackgroundColor(result);
             } catch (error) {
+                console.error('Evaluation error:', error);
                 updateOutput({
                     stdout: '',
                     stderr: error.message,
-                    return_code: 1
+                    return_code: 1,
+                    code_outputs: []
                 });
                 updateBackgroundColor({ return_code: 1, stderr: error.message });
             } finally {
                 isEvaluating = false;
                 
-                // If there's a pending evaluation, process it
                 if (pendingEvaluation) {
                     const { code, language } = pendingEvaluation;
                     pendingEvaluation = null;
@@ -180,6 +194,17 @@
             const outputDiv = document.getElementById('output');
             outputDiv.innerHTML = '';
 
+            // Display code outputs first (assembly)
+            if (result.code_outputs && result.code_outputs.length > 0) {
+                result.code_outputs.forEach(output => {
+                    outputDiv.textContent += output.content + '\n';
+                });
+
+                // Add separator
+                outputDiv.textContent += '='.repeat(80) + '\n\n';
+            }
+
+            // Then display stdout/stderr
             if (result.stdout) {
                 outputDiv.innerHTML += `<div class="output-label">Output:</div>${result.stdout}\n`;
             }
@@ -198,14 +223,13 @@
         // Handle language change
         document.getElementById('language').addEventListener('change', (e) => {
             const newLanguage = e.target.value;
-            // Always use 'c' as the editor language for both C and C to Assembly
             const editorLang = newLanguage === 'c_to_asm' ? 'c' : newLanguage;
             monaco.editor.setModelLanguage(editor.getModel(), editorLang);
             queueEvaluation(editor.getValue());
         });
 
-        // Initialize editor when Monaco is loaded
-        initEditor();
+        // Initialize editor when page loads
+        initEditor().catch(console.error);
     </script>
 </body>
 </html>
