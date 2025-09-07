@@ -1,66 +1,68 @@
 import tempfile
 import os
+import asyncio
 from .base import CodeResult, CodeOutput, run_process
 from .utils import detect_system_arch, format_hexdump
 
 async def run_cpp(code: str) -> CodeResult:
-    # Extract compiler flags from first line comment
-    lines = code.split('\n')
-    compiler_flags = []
-    if lines and lines[0].startswith('//'):
-        compiler_flags = lines[0].lstrip('/ ').split()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Write the code to a file
+        source_file = os.path.join(tmpdir, 'main.cpp')
+        with open(source_file, 'w') as f:
+            f.write(code)
 
-    with tempfile.NamedTemporaryFile(suffix='.cpp', mode='w', delete=False) as f:
-        f.write(code)
-        cpp_file = f.name
-
-    try:
-        # Get assembly output
+        # Get system architecture for objdump output
         arch = detect_system_arch()
-        asm_result = await run_process(['g++', '-S', '-masm=intel', '-o', '-'] + compiler_flags + [cpp_file])
-        if asm_result.return_code == 0:
-            asm_output = f"// arch: {arch} syntax: intel\n\n{asm_result.stdout}"
-        else:
+
+        # Compile to assembly first
+        asm_file = os.path.join(tmpdir, 'main.s')
+        asm_result = await run_process(['g++', '-S', '-o', asm_file, source_file])
+        if asm_result.return_code != 0:
             return asm_result
 
-        # Get objdump output
-        object_file = cpp_file + '.o'
-        compile_obj_result = await run_process(['g++', '-c', cpp_file, '-o', object_file] + compiler_flags)
-        if compile_obj_result.return_code != 0:
-            return compile_obj_result
-
-        objdump_result = await run_process(['objdump', '-d', object_file])
-        if objdump_result.return_code != 0:
-            return objdump_result
-
-        # Get hexdump
+        # Read assembly output
         try:
-            with open(object_file, 'rb') as f:
-                binary_data = f.read()
-            hexdump = format_hexdump(binary_data)
+            with open(asm_file, 'r') as f:
+                asm_output = f.read()
         except Exception as e:
-            hexdump = f"Failed to read binary: {str(e)}"
+            print(f"Error reading assembly: {e}")
+            asm_output = ""
 
-        # Compile and run the program
-        executable = cpp_file + '.out'
-        compile_result = await run_process(['g++', cpp_file, '-o', executable] + compiler_flags)
+        # Compile to executable
+        executable = os.path.join(tmpdir, 'main')
+        compile_result = await run_process(['g++', '-o', executable, source_file])
         if compile_result.return_code != 0:
             return compile_result
 
-        run_result = await run_process([executable])
-        
+        # Read binary for hexdump
+        try:
+            with open(executable, 'rb') as f:
+                binary_data = f.read()
+        except Exception as e:
+            print(f"Error reading binary: {e}")
+            binary_data = b''
+
+        # Run objdump, hexdump, and program in parallel
+        tasks = [
+            run_process(['objdump', '-d', executable]),  # objdump
+            format_hexdump(binary_data),                 # hexdump
+            run_process([executable])                    # program execution
+        ]
+
+        try:
+            objdump_result, hexdump_output, run_result = await asyncio.gather(*tasks)
+        except Exception as e:
+            print(f"Error in parallel execution: {e}")
+            return CodeResult(stdout="", stderr=str(e), return_code=1)
+
+        if run_result.return_code != 0:
+            return run_result
+
         # Add all outputs
         run_result.code_outputs = [
             CodeOutput(content=asm_output, language="asm-intel"),
             CodeOutput(content=objdump_result.stdout, language=f"asm-{arch}"),
-            CodeOutput(content=hexdump, language="hexdump")
+            CodeOutput(content=hexdump_output, language="hexdump")
         ]
-        return run_result
 
-    finally:
-        try:
-            os.unlink(cpp_file)
-            os.unlink(object_file)
-            os.unlink(executable)
-        except:
-            pass
+        return run_result

@@ -1,108 +1,97 @@
+import tempfile
 import os
 import re
-import platform
-import tempfile
-from .base import run_process, CodeResult, CodeOutput
+import asyncio
+from typing import Optional, Tuple
+from .base import CodeResult, CodeOutput, run_process
 from .utils import format_hexdump
 
+def parse_arch_and_syntax(code: str) -> Tuple[Optional[str], Optional[str]]:
+    """Extract architecture and syntax from code comments."""
+    arch_match = re.search(r'//\s*arch:\s*(\w+)', code)
+    syntax_match = re.search(r'//\s*syntax:\s*(\w+)', code)
+    return (
+        arch_match.group(1) if arch_match else None,
+        syntax_match.group(1) if syntax_match else None
+    )
+
 async def run_assembly(code: str) -> CodeResult:
-    """Run assembly code by assembling and executing."""
-    # Extract architecture and syntax from first line comment
-    # Format: // arch: x86_64|x86|arm64 syntax: intel|att
-    lines = code.split('\n')
-    if not lines or not lines[0].startswith('//'):
-        return CodeResult(
-            stdout="",
-            stderr="First line must be a comment specifying architecture and syntax.\nExample: // arch: x86_64 syntax: intel",
-            return_code=1
-        )
-
-    # Parse architecture and syntax
-    arch_match = re.search(r'arch:\s*(\w+)', lines[0])
-    syntax_match = re.search(r'syntax:\s*(\w+)', lines[0])
-    
-    if not arch_match:
-        return CodeResult(
-            stdout="",
-            stderr="Architecture not specified. Use '// arch: x86_64|x86|arm64'",
-            return_code=1
-        )
-    
-    arch = arch_match.group(1).lower()
-    syntax = syntax_match.group(1).lower() if syntax_match else 'intel'
-
-    # Validate architecture
-    valid_archs = ['x86_64', 'x86', 'arm64']
-    if arch not in valid_archs:
-        return CodeResult(
-            stdout="",
-            stderr=f"Invalid architecture. Must be one of: {', '.join(valid_archs)}",
-            return_code=1
-        )
-
-    # Validate syntax
-    valid_syntaxes = ['intel', 'att']
-    if syntax not in valid_syntaxes:
-        return CodeResult(
-            stdout="",
-            stderr=f"Invalid syntax. Must be one of: {', '.join(valid_syntaxes)}",
-            return_code=1
-        )
-
-    # Create temp files
     with tempfile.TemporaryDirectory() as tmpdir:
-        asm_file = os.path.join(tmpdir, 'code.asm')
-        obj_file = os.path.join(tmpdir, 'code.o')
-        executable = os.path.join(tmpdir, 'code.out')
-
-        # Write assembly code
-        with open(asm_file, 'w') as f:
-            f.write('\n'.join(lines[1:]))  # Skip the first line (comment)
-
-        try:
-            # Assemble based on architecture
-            if arch in ['x86_64', 'x86']:
-                # Use nasm for x86/x86_64
-                format_flag = 'macho64' if arch == 'x86_64' and platform.system() == 'Darwin' else \
-                            'elf64' if arch == 'x86_64' else \
-                            'macho' if platform.system() == 'Darwin' else 'elf32'
-                
-                assemble_result = await run_process(['nasm', '-f', format_flag, asm_file, '-o', obj_file])
-                if assemble_result.return_code != 0:
-                    return assemble_result
-
-                # Link
-                link_result = await run_process(['ld', obj_file, '-o', executable])
-                if link_result.return_code != 0:
-                    return link_result
-
-            elif arch == 'arm64':
-                # Use as for arm64
-                assemble_result = await run_process(['as', '-arch', 'arm64', asm_file, '-o', obj_file])
-                if assemble_result.return_code != 0:
-                    return assemble_result
-
-                # Link
-                link_result = await run_process(['ld', obj_file, '-o', executable, '-lSystem', '-syslibroot', '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk', '-e', '_start'])
-                if link_result.return_code != 0:
-                    return link_result
-
-            # Get hex dump
-            try:
-                with open(obj_file, 'rb') as f:
-                    binary_data = f.read()
-                hexdump = format_hexdump(binary_data)
-            except Exception as e:
-                hexdump = f"Failed to read binary: {str(e)}"
-
-            # Run the program
-            run_result = await run_process([executable])
-            run_result.code_outputs = [CodeOutput(content=hexdump, language="hexdump")]
-            return run_result
-
-        except Exception as e:
+        # Parse architecture and syntax from comments
+        arch, syntax = parse_arch_and_syntax(code)
+        if not arch:
             return CodeResult(
                 stdout="",
-                stderr=f"Failed to assemble or run: {str(e)}",
+                stderr="Error: Architecture not specified. Add a comment like: // arch: x86_64",
                 return_code=1
             )
+
+        # Write the code to a file
+        source_file = os.path.join(tmpdir, 'code.asm')
+        with open(source_file, 'w') as f:
+            f.write(code)
+
+        # Choose assembler and flags based on architecture
+        if arch == 'x86' or arch == 'x86_64':
+            # NASM for x86/x86_64
+            obj_file = os.path.join(tmpdir, 'code.o')
+            format_flag = 'elf64' if arch == 'x86_64' else 'elf32'
+            syntax_flag = ['-msyntax=intel'] if syntax == 'intel' else []
+            
+            assemble_result = await run_process(
+                ['nasm', '-f', format_flag] + syntax_flag + ['-o', obj_file, source_file]
+            )
+            if assemble_result.return_code != 0:
+                return assemble_result
+
+        elif arch == 'arm64':
+            # GNU as for ARM64
+            obj_file = os.path.join(tmpdir, 'code.o')
+            assemble_result = await run_process(['as', '-o', obj_file, source_file])
+            if assemble_result.return_code != 0:
+                return assemble_result
+
+        else:
+            return CodeResult(
+                stdout="",
+                stderr=f"Error: Unsupported architecture: {arch}",
+                return_code=1
+            )
+
+        # Link the object file
+        executable = os.path.join(tmpdir, 'code')
+        link_result = await run_process(['ld', '-o', executable, obj_file])
+        if link_result.return_code != 0:
+            return link_result
+
+        # Read binary for hexdump
+        try:
+            with open(executable, 'rb') as f:
+                binary_data = f.read()
+        except Exception as e:
+            print(f"Error reading binary: {e}")
+            binary_data = b''
+
+        # Run objdump, hexdump, and program in parallel
+        tasks = [
+            run_process(['objdump', '-d', executable]),  # objdump
+            format_hexdump(binary_data),                 # hexdump
+            run_process([executable])                    # program execution
+        ]
+
+        try:
+            objdump_result, hexdump_output, run_result = await asyncio.gather(*tasks)
+        except Exception as e:
+            print(f"Error in parallel execution: {e}")
+            return CodeResult(stdout="", stderr=str(e), return_code=1)
+
+        if run_result.return_code != 0:
+            return run_result
+
+        # Add objdump and hexdump outputs
+        run_result.code_outputs = [
+            CodeOutput(content=objdump_result.stdout, language=f"asm-{arch}"),
+            CodeOutput(content=hexdump_output, language="hexdump")
+        ]
+
+        return run_result
