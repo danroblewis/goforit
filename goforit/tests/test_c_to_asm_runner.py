@@ -1,5 +1,5 @@
 import pytest
-from backend.language_runners import run_c_to_asm
+from goforit.language_runners import run_c_to_asm
 
 def test_basic_function(run_async):
     code = '''

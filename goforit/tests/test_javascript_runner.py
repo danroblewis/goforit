@@ -1,5 +1,5 @@
 import pytest
-from backend.language_runners import run_javascript
+from goforit.language_runners import run_javascript
 
 def test_hello_world(run_async):
     code = 'console.log("Hello, World!")'

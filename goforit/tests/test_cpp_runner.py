@@ -1,5 +1,5 @@
 import pytest
-from backend.language_runners import run_cpp
+from goforit.language_runners import run_cpp
 
 def test_hello_world(run_async):
     code = '''
