@@ -37,7 +37,7 @@ function createCollapsibleSection(title, content, language) {
         contentDiv.classList.add('collapsed');
     }
     
-    if (language && language.startsWith('asm-')) {
+    if (language && (language.startsWith('asm-') || language === 'asm-intel')) {
         contentDiv.innerHTML = highlightAssembly(content);
     } else if (language === 'hexdump') {
         contentDiv.innerHTML = highlightHexdump(content);
