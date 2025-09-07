@@ -56,7 +56,7 @@ async def run_go(code: str) -> CodeResult:
             return build_result
         build_time = time.time() - build_start
 
-        # Run everything in parallel: go tool objdump, hexdump, and program execution
+        # Run everything in parallel: go tool compile -S, objdump, hexdump, and program execution
         parallel_start = time.time()
         arch = detect_system_arch()
         
@@ -70,7 +70,9 @@ async def run_go(code: str) -> CodeResult:
         
         # Create tasks for parallel execution
         tasks = [
-            # Use go tool objdump and filter to just our package's functions
+            # Get assembly from go tool compile
+            run_process(['go', 'tool', 'compile', '-S', main_go]),
+            # Get objdump of just our functions
             run_process(['go', 'tool', 'objdump', '-s', 'main\.', executable]),
             format_hexdump(binary_data),                 # hexdump of first 1KB
             run_process([executable])                    # program execution
@@ -79,7 +81,7 @@ async def run_go(code: str) -> CodeResult:
         # Run all tasks in parallel and wait for results
         try:
             results = await asyncio.gather(*tasks)
-            objdump_result, hexdump_output, run_result = results
+            asm_result, objdump_result, hexdump_output, run_result = results
         except Exception as e:
             print(f"Error in parallel execution: {e}")
             return CodeResult(stdout="", stderr=str(e), return_code=1)
@@ -87,19 +89,20 @@ async def run_go(code: str) -> CodeResult:
         parallel_time = time.time() - parallel_start
         
         # Check for errors
-        if objdump_result.return_code != 0:
+        if asm_result.return_code != 0:
             print(f"Write time: {write_time:.3f}s")
             print(f"Build time: {build_time:.3f}s")
             print(f"Parallel time: {parallel_time:.3f}s")
-            return objdump_result
+            return asm_result
         if run_result.return_code != 0:
             print(f"Write time: {write_time:.3f}s")
             print(f"Build time: {build_time:.3f}s")
             print(f"Parallel time: {parallel_time:.3f}s")
             return run_result
         
-        # Add objdump and hexdump outputs
+        # Add compiler assembly, objdump and hexdump outputs
         run_result.code_outputs = [
+            CodeOutput(content=asm_result.stdout, language="asm-go"),
             CodeOutput(content=objdump_result.stdout, language=f"asm-{arch}"),
             CodeOutput(content=hexdump_output, language="hexdump")
         ]
