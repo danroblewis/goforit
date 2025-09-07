@@ -107,6 +107,7 @@ export class CodeEvaluator {
         this.isEvaluating = false;
         this.pendingEvaluation = null;
         this.currentController = null;
+        this.retryTimeout = null;
     }
 
     async queueEvaluation(code, language) {
@@ -117,6 +118,12 @@ export class CodeEvaluator {
                 this.currentController.abort();
             }
             return null;
+        }
+
+        // Clear any existing retry timeout
+        if (this.retryTimeout) {
+            clearTimeout(this.retryTimeout);
+            this.retryTimeout = null;
         }
 
         return await this._evaluate(code, language);
@@ -147,11 +154,24 @@ export class CodeEvaluator {
             return result;
         } catch (error) {
             if (error.name === 'AbortError') {
+                // If we have a pending evaluation, schedule a retry
+                if (this.pendingEvaluation) {
+                    const { code, language } = this.pendingEvaluation;
+                    this.pendingEvaluation = null;
+                    this.isEvaluating = false;
+                    
+                    // Schedule a retry after a short delay
+                    return new Promise(resolve => {
+                        this.retryTimeout = setTimeout(() => {
+                            resolve(this._evaluate(code, language));
+                        }, 50); // 50ms delay before retry
+                    });
+                }
                 return null;
             }
             throw error;
         } finally {
-            if (!this.pendingEvaluation) {
+            if (!this.pendingEvaluation && !this.retryTimeout) {
                 this.isEvaluating = false;
                 this.currentController = null;
             }
