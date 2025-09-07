@@ -18,6 +18,31 @@ export class App {
                     
                     // Register assembly language
                     monaco.languages.register({ id: 'asm' });
+
+                    // Common instructions and registers
+                    const instructions = [
+                        'mov', 'push', 'pop', 'lea', 'call', 'ret',
+                        'add', 'sub', 'mul', 'div', 'inc', 'dec',
+                        'and', 'or', 'xor', 'not', 'neg', 'shl', 'shr',
+                        'jmp', 'je', 'jne', 'jg', 'jge', 'jl', 'jle',
+                        'cmp', 'test',
+                        'syscall', 'int'
+                    ];
+
+                    const registers = [
+                        // x86_64
+                        'rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rbp', 'rsp',
+                        'r8', 'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15',
+                        // x86
+                        'eax', 'ebx', 'ecx', 'edx', 'esi', 'edi', 'ebp', 'esp',
+                        // ARM64
+                        'x0', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7',
+                        'x8', 'x9', 'x10', 'x11', 'x12', 'x13', 'x14', 'x15',
+                        'x16', 'x17', 'x18', 'x19', 'x20', 'x21', 'x22', 'x23',
+                        'x24', 'x25', 'x26', 'x27', 'x28', 'x29', 'x30',
+                        'sp', 'pc', 'xzr'
+                    ];
+
                     monaco.languages.setMonarchTokensProvider('asm', {
                         defaultToken: '',
                         tokenPostfix: '.asm',
@@ -37,30 +62,8 @@ export class App {
                             'byte', 'word', 'dword', 'qword'
                         ],
 
-                        // Common instructions
-                        instructions: [
-                            'mov', 'push', 'pop', 'lea', 'call', 'ret',
-                            'add', 'sub', 'mul', 'div', 'inc', 'dec',
-                            'and', 'or', 'xor', 'not', 'neg', 'shl', 'shr',
-                            'jmp', 'je', 'jne', 'jg', 'jge', 'jl', 'jle',
-                            'cmp', 'test',
-                            'syscall', 'int'
-                        ],
-
-                        // Registers
-                        registers: [
-                            // x86_64
-                            'rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rbp', 'rsp',
-                            'r8', 'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15',
-                            // x86
-                            'eax', 'ebx', 'ecx', 'edx', 'esi', 'edi', 'ebp', 'esp',
-                            // ARM64
-                            'x0', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7',
-                            'x8', 'x9', 'x10', 'x11', 'x12', 'x13', 'x14', 'x15',
-                            'x16', 'x17', 'x18', 'x19', 'x20', 'x21', 'x22', 'x23',
-                            'x24', 'x25', 'x26', 'x27', 'x28', 'x29', 'x30',
-                            'sp', 'pc', 'xzr'
-                        ],
+                        instructions,
+                        registers,
 
                         // Tokenizer
                         tokenizer: {
@@ -87,10 +90,10 @@ export class App {
                                 [/\b(byte|word|dword|qword)\b/, 'keyword'],
 
                                 // Instructions
-                                [new RegExp(`\\b(${this.instructions.join('|')})\\b`), 'keyword.instruction'],
+                                [new RegExp(`\\b(${instructions.join('|')})\\b`), 'keyword.instruction'],
 
                                 // Registers
-                                [new RegExp(`\\b(${this.registers.join('|')})\\b`), 'variable.predefined'],
+                                [new RegExp(`\\b(${registers.join('|')})\\b`), 'variable.predefined'],
 
                                 // Operators
                                 [/[+\-*/=<>|&^~!]+/, 'operator'],
