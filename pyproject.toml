@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A real-time code evaluation environment with support for multiple programming languages"
 readme = "README.md"
 authors = [
-    { name = "Daniel Lewis", email = "danroblewis@mac.lan" }
+    { name = "Daniel Lewis", email = "daniel.robert.lewis@gmail.com" }
 ]
 dependencies = [
     "fastapi>=0.104.1",
