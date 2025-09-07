@@ -11,7 +11,7 @@ def parse_build_flags(code: str) -> list[str]:
     flags_match = re.match(r'//\s*flags:\s*(.*)', code)
     if not flags_match:
         # Default optimization flags for smaller binaries and faster builds
-        return ['-ldflags=-s,-w']  # Strip debug info and DWARF tables
+        return ['-ldflags=-s -w']  # Strip debug info and DWARF tables
     return flags_match.group(1).split()
 
 async def run_go(code: str) -> CodeResult:
