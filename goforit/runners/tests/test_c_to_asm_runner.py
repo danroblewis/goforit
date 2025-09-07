@@ -1,6 +1,6 @@
 import pytest
-from ..c_to_asm_runner import run_c_to_asm
-from ..utils import detect_system_arch
+from goforit.runners.c_to_asm_runner import run_c_to_asm
+from goforit.runners.utils import detect_system_arch
 
 def test_hello_world(run_async):
     code = '''

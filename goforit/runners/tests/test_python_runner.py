@@ -1,5 +1,5 @@
 import pytest
-from ..python_runner import run_python
+from goforit.runners.python_runner import run_python
 
 def test_hello_world(run_async):
     result = run_async(run_python('print("Hello, World!")'))

@@ -1,6 +1,6 @@
 import pytest
 import platform
-from ..assembly_runner import run_assembly
+from goforit.runners.assembly_runner import run_assembly
 
 def test_missing_arch_header(run_async):
     code = '''

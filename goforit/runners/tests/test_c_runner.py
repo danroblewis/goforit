@@ -1,5 +1,5 @@
 import pytest
-from ..c_runner import run_c
+from goforit.runners.c_runner import run_c
 
 def test_hello_world(run_async):
     code = '''

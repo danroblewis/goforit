@@ -1,5 +1,5 @@
 import pytest
-from ..c_to_objdump_runner import run_c_to_objdump
+from goforit.runners.c_to_objdump_runner import run_c_to_objdump
 
 def test_hello_world(run_async):
     code = '''

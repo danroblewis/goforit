@@ -1,5 +1,5 @@
 import pytest
-from ..utils import format_hexdump, detect_system_arch
+from goforit.runners.utils import format_hexdump, detect_system_arch
 
 def test_format_hexdump():
     # Test with simple data
