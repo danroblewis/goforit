@@ -90,9 +90,15 @@ export function renderOutput(outputDiv, result) {
 
     // Then display stdout/stderr
     if (result.stdout) {
-        outputDiv.innerHTML += `<div class="output-label">Output:</div>${result.stdout}\n`;
+        const stdoutDiv = document.createElement('div');
+        stdoutDiv.className = 'code-output-block';
+        stdoutDiv.innerHTML = `<div class="output-label">Output:</div>${result.stdout}`;
+        outputDiv.appendChild(stdoutDiv);
     }
     if (result.stderr) {
-        outputDiv.innerHTML += `<div class="error-label">Errors:</div>${result.stderr}`;
+        const stderrDiv = document.createElement('div');
+        stderrDiv.className = 'code-output-block';
+        stderrDiv.innerHTML = `<div class="error-label">Errors:</div>${result.stderr}`;
+        outputDiv.appendChild(stderrDiv);
     }
 }
