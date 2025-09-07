@@ -104,76 +104,58 @@ export function updateBackgroundColor(result) {
 
 export class CodeEvaluator {
     constructor() {
-        this.isEvaluating = false;
-        this.pendingEvaluation = null;
-        this.currentController = null;
-        this.retryTimeout = null;
+        this.currentEvaluation = null;
+        this.nextEvaluation = null;
     }
 
     async queueEvaluation(code, language) {
-        // If there's a pending evaluation, update its code
-        if (this.isEvaluating) {
-            this.pendingEvaluation = { code, language };
-            if (this.currentController) {
-                this.currentController.abort();
-            }
+        // Store this as the next evaluation to run
+        this.nextEvaluation = { code, language };
+
+        // If we're already evaluating, let that finish
+        if (this.currentEvaluation) {
             return null;
         }
 
-        // Clear any existing retry timeout
-        if (this.retryTimeout) {
-            clearTimeout(this.retryTimeout);
-            this.retryTimeout = null;
-        }
-
-        return await this._evaluate(code, language);
+        // Start processing the queue
+        return this._processQueue();
     }
 
-    async _evaluate(code, language) {
-        this.isEvaluating = true;
-        this.currentController = new AbortController();
+    async _processQueue() {
+        while (this.nextEvaluation) {
+            // Take the next evaluation
+            const { code, language } = this.nextEvaluation;
+            this.nextEvaluation = null;
 
-        try {
-            const response = await fetch('/api/evaluate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code, language }),
-                signal: this.currentController.signal
-            });
+            // Create a new AbortController for this request
+            const controller = new AbortController();
+            
+            try {
+                this.currentEvaluation = fetch('/api/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, language }),
+                    signal: controller.signal
+                });
 
-            const result = await response.json();
+                // Wait for the response
+                const response = await this.currentEvaluation;
+                const result = await response.json();
 
-            // Check if there's a pending evaluation
-            if (this.pendingEvaluation) {
-                const { code, language } = this.pendingEvaluation;
-                this.pendingEvaluation = null;
-                this.isEvaluating = false;
-                return await this._evaluate(code, language);
-            }
-
-            return result;
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                // If we have a pending evaluation, schedule a retry
-                if (this.pendingEvaluation) {
-                    const { code, language } = this.pendingEvaluation;
-                    this.pendingEvaluation = null;
-                    this.isEvaluating = false;
-                    
-                    // Schedule a retry after a short delay
-                    return new Promise(resolve => {
-                        this.retryTimeout = setTimeout(() => {
-                            resolve(this._evaluate(code, language));
-                        }, 50); // 50ms delay before retry
-                    });
+                // If there's no next evaluation, return the result
+                if (!this.nextEvaluation) {
+                    return result;
                 }
-                return null;
-            }
-            throw error;
-        } finally {
-            if (!this.pendingEvaluation && !this.retryTimeout) {
-                this.isEvaluating = false;
-                this.currentController = null;
+
+                // Otherwise, continue the loop to process the next evaluation
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    // Ignore abort errors, just continue with the next evaluation
+                    continue;
+                }
+                throw error;
+            } finally {
+                this.currentEvaluation = null;
             }
         }
     }
