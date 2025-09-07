@@ -25,6 +25,6 @@ goforit = "goforit.cli:main"
 packages = ["goforit"]
 
 [tool.pytest.ini_options]
-testpaths = ["goforit/tests"]
+testpaths = ["goforit/runners/tests"]
 python_files = ["test_*.py"]
 asyncio_mode = "strict"
