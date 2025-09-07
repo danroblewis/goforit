@@ -1,45 +1,33 @@
-import unittest
-import asyncio
+import pytest
 from ..language_runners import run_javascript
 
-class TestJavaScriptRunner(unittest.TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
+def test_hello_world(run_async):
+    code = 'console.log("Hello, World!")'
+    result = run_async(run_javascript(code))
+    assert result.stdout.strip() == "Hello, World!"
+    assert result.stderr == ""
+    assert result.return_code == 0
 
-    def tearDown(self):
-        self.loop.close()
+def test_syntax_error(run_async):
+    code = 'console.log("Hello, World!'  # Missing closing quote
+    result = run_async(run_javascript(code))
+    assert result.return_code != 0
+    assert result.stderr != ""
 
-    def run_async(self, coro):
-        return self.loop.run_until_complete(coro)
+def test_timeout(run_async):
+    code = 'while(true) {}'
+    result = run_async(run_javascript(code))
+    assert result.return_code == 124
+    assert result.stderr == "Execution timed out"
 
-    def test_hello_world(self):
-        code = 'console.log("Hello, World!")'
-        result = self.run_async(run_javascript(code))
-        self.assertEqual(result.stdout.strip(), "Hello, World!")
-        self.assertEqual(result.stderr, "")
-        self.assertEqual(result.return_code, 0)
-
-    def test_syntax_error(self):
-        code = 'console.log("Hello, World!'  # Missing closing quote
-        result = self.run_async(run_javascript(code))
-        self.assertNotEqual(result.return_code, 0)
-        self.assertNotEqual(result.stderr, "")
-
-    def test_timeout(self):
-        code = 'while(true) {}'
-        result = self.run_async(run_javascript(code))
-        self.assertEqual(result.return_code, 124)
-        self.assertEqual(result.stderr, "Execution timed out")
-
-    def test_multiple_lines(self):
-        code = '''
+def test_multiple_lines(run_async):
+    code = '''
 function add(a, b) {
     return a + b;
 }
 console.log(add(2, 3));
 '''
-        result = self.run_async(run_javascript(code))
-        self.assertEqual(result.stdout.strip(), "5")
-        self.assertEqual(result.stderr, "")
-        self.assertEqual(result.return_code, 0)
+    result = run_async(run_javascript(code))
+    assert result.stdout.strip() == "5"
+    assert result.stderr == ""
+    assert result.return_code == 0
