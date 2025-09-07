@@ -80,17 +80,17 @@ cd goforit
 
 2. Install Python dependencies:
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
 3. Start the server:
 ```bash
-uvicorn goforit.main:app --reload
+goforit
 ```
 
-4. Open your browser and navigate to:
-```
-http://localhost:8000
+4. Or run directly with uvicorn:
+```bash
+uvicorn goforit.main:app --reload
 ```
 
 ## Assembly Language Support
@@ -135,7 +135,7 @@ int main() {
 ```
 
 ### C to Objdump Mode
-Shows disassembled binary using `objdump -d`:
+Shows disassembled binary using `objdump -d` and includes a hexdump of the binary:
 ```c
 // -O3 -march=native
 int main() {
@@ -189,16 +189,34 @@ The project structure:
 goforit/
 ├── goforit/
 │   ├── main.py           # FastAPI application
-│   ├── language_runners.py # Language-specific runners
 │   ├── cli.py            # Command-line interface
 │   ├── examples/         # Example programs
-│   ├── tests/            # Python unit tests
+│   ├── runners/         # Language-specific runners
+│   │   ├── __init__.py  # Runner registry
+│   │   ├── base.py      # Base classes and utilities
+│   │   ├── utils.py     # Shared utilities
+│   │   ├── python_runner.py
+│   │   ├── javascript_runner.py
+│   │   ├── typescript_runner.py
+│   │   ├── java_runner.py
+│   │   ├── cpp_runner.py
+│   │   ├── c_runner.py
+│   │   ├── c_to_asm_runner.py
+│   │   ├── c_to_objdump_runner.py
+│   │   ├── assembly_runner.py
+│   │   ├── rust_runner.py
+│   │   ├── go_runner.py
+│   │   └── tests/       # Runner unit tests
 │   └── static/
-│       ├── index.html    # Frontend application
-│       ├── styles.css    # CSS styles
-│       └── js/           # JavaScript modules and tests
-├── pyproject.toml        # Python package configuration
-└── requirements.txt      # Python dependencies
+│       ├── index.html   # Frontend application
+│       ├── styles.css   # CSS styles
+│       └── js/          # JavaScript modules
+│           ├── app.js
+│           ├── codeEvaluator.js
+│           ├── assemblyHighlighter.js
+│           ├── assemblyLanguage.js
+│           └── hexdumpHighlighter.js
+└── pyproject.toml       # Project configuration and dependencies
 ```
 
 ### Running Tests
@@ -206,13 +224,6 @@ goforit/
 Run Python tests:
 ```bash
 python -m pytest
-```
-
-Run JavaScript tests:
-```bash
-cd goforit/static/js
-npm install
-npm test
 ```
 
 ## License
