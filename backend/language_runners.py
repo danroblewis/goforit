@@ -1,6 +1,7 @@
 import asyncio
 import tempfile
 import os
+import re
 from typing import Tuple, Optional
 from dataclasses import dataclass
 
@@ -93,6 +94,7 @@ async def run_c_to_asm(code: str) -> CodeResult:
     with tempfile.NamedTemporaryFile(suffix='.c', mode='w', delete=False) as f:
         f.write(code)
         c_file = f.name
+        base_name = os.path.basename(c_file)
     
     try:
         # Compile with optimization flags from comment
@@ -110,6 +112,25 @@ async def run_c_to_asm(code: str) -> CodeResult:
         objdump_result = await run_process(['objdump', '-d', object_file])
         if objdump_result.return_code != 0:
             return objdump_result
+
+        # Clean up the objdump output by removing temp directory paths
+        cleaned_output = objdump_result.stdout.replace(os.path.dirname(c_file) + '/', '')
+
+        # Detect architecture from objdump output
+        arch_match = re.search(r'file format\s+([^\n]+)', cleaned_output)
+        arch_type = "unknown"
+        if arch_match:
+            arch_format = arch_match.group(1).strip()
+            if "arm64" in arch_format:
+                arch_type = "arm64"
+            elif "x86-64" in arch_format:
+                arch_type = "x86_64"
+            elif "x86" in arch_format:
+                arch_type = "x86"
+            elif "mach-o" in arch_format:
+                arch_type = "mach-o"
+            else:
+                arch_type = arch_format
         
         # Compile for execution
         compile_exec_cmd = ['gcc', c_file, '-o', executable] + compiler_flags
@@ -127,7 +148,7 @@ async def run_c_to_asm(code: str) -> CodeResult:
             stderr=run_result.stderr,
             return_code=run_result.return_code,
             code_outputs=[
-                CodeOutput(content=objdump_result.stdout, language="x86asm")
+                CodeOutput(content=cleaned_output, language=f"asm-{arch_type}")
             ]
         )
     
