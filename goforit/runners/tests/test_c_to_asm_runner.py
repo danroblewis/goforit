@@ -16,7 +16,8 @@ def test_hello_world(run_async):
     assert result.return_code == 0
     assert len(result.code_outputs) == 1
     assert result.code_outputs[0].language == "asm-intel"
-    assert "main" in result.code_outputs[0].content
+    # Check for common function names across gcc/clang
+    assert any(name in result.code_outputs[0].content for name in ['main', '_main'])
 
 def test_compiler_flags(run_async):
     code = '''// -O3
@@ -41,7 +42,11 @@ def test_compilation_error(run_async):
     }
     '''
     result = run_async(run_c_to_asm(code))
-    assert "implicit declaration of function 'printf'" in result.stderr
+    # Check for either gcc or clang error message
+    assert any(msg in result.stderr for msg in [
+        "implicit declaration of function 'printf'",  # gcc
+        "call to undeclared library function 'printf'"  # clang
+    ])
     assert result.return_code != 0
 
 def test_architecture_header(run_async):

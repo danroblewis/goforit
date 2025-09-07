@@ -22,7 +22,11 @@ def test_compilation_error(run_async):
     }
     '''
     result = run_async(run_c(code))
-    assert "implicit declaration of function 'printf'" in result.stderr
+    # Check for either gcc or clang error message
+    assert any(msg in result.stderr for msg in [
+        "implicit declaration of function 'printf'",  # gcc
+        "call to undeclared library function 'printf'"  # clang
+    ])
     assert result.return_code != 0
 
 def test_runtime_error(run_async):
