@@ -21,6 +21,9 @@ requires-python = ">=3.8"
 [project.scripts]
 goforit = "goforit.cli:main"
 
+[tool.hatch.build.targets.wheel]
+packages = ["goforit"]
+
 [tool.pytest.ini_options]
 testpaths = ["goforit/tests"]
 python_files = ["test_*.py"]
