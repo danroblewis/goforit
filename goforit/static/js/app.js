@@ -13,8 +13,6 @@ export class App {
             'java': '/static/examples/Example.java',
             'cpp': '/static/examples/CPP.cpp',
             'c': '/static/examples/C.c',
-            'c_to_asm': '/static/examples/CToAssembly.c',
-            'c_to_objdump': '/static/examples/CToObjdump.c',
             'assembly': '/static/examples/Assembly.asm',
             'rust': '/static/examples/Rust.rs',
             'go': '/static/examples/Go.go'
@@ -40,8 +38,6 @@ export class App {
 
     getEditorLanguage(selectedLanguage) {
         switch (selectedLanguage) {
-            case 'c_to_asm':
-            case 'c_to_objdump':
             case 'c':
                 return 'c';
             case 'assembly':
