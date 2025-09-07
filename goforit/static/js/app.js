@@ -81,11 +81,13 @@ export class App {
     async loadLastCode() {
         const data = await this.evaluator.loadLastCode();
         if (data?.code) {
-            this.editor.setValue(data.code);
+            // First set the language
             document.getElementById('language').value = data.language;
             const editorLang = data.language === 'c_to_asm' ? 'c' : data.language;
             this.monaco.editor.setModelLanguage(this.editor.getModel(), editorLang);
-            await this.handleEditorChange();
+            
+            // Then set the code value (this will trigger evaluation)
+            this.editor.setValue(data.code);
         }
     }
 
