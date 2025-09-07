@@ -41,7 +41,6 @@
 }
 
 .code-output-block {
-    margin-bottom: 10px;
     white-space: pre;
     word-break: keep-all;
     overflow-x: auto;
@@ -72,9 +71,9 @@
     display: flex;
     align-items: center;
     cursor: pointer;
-    padding: 5px;
     margin-bottom: 0;
     opacity: 0.7;
+    user-select: none;
 }
 
 .collapsible-header:hover {
@@ -86,16 +85,14 @@
     color: #9cdcfe;
 }
 
-.collapsible-button {
-    background: none;
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    padding: 0 10px;
+.collapsible-title::after {
+    content: '▼';
+    margin-left: 5px;
+    font-size: 0.8em;
 }
 
-.collapsible-button:hover {
-    color: #9cdcfe;
+.collapsible-content:not(.collapsed) + .collapsible-title::after {
+    content: '▲';
 }
 
 .collapsible-content {

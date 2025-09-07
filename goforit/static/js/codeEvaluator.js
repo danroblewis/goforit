@@ -14,9 +14,7 @@ export function clearCollapsedState() {
 
 function toggleCollapse(contentId, title) {
     const content = document.getElementById(contentId);
-    const button = document.querySelector(`[data-target="${contentId}"]`);
     const isCollapsed = content.classList.toggle('collapsed');
-    button.textContent = isCollapsed ? '▼' : '▲';
     collapsedSections.set(title, isCollapsed);
 }
 
@@ -30,12 +28,7 @@ function createCollapsibleSection(title, content, language) {
 
     const header = document.createElement('div');
     header.className = 'collapsible-header';
-    header.innerHTML = `
-        <span class="collapsible-title">${title}</span>
-        <button class="collapsible-button" data-target="${contentId}">
-            ${wasCollapsed ? '▼' : '▲'}
-        </button>
-    `;
+    header.innerHTML = `<span class="collapsible-title">${title}</span>`;
 
     const contentDiv = document.createElement('div');
     contentDiv.id = contentId;
