@@ -24,8 +24,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Path to store the last code
+# Paths for code storage
 SAVE_PATH = "last_code.json"
+DEFAULT_CODE_PATH = os.path.join(os.path.dirname(__file__), "default_code.json")
 
 class CodeRequest(BaseModel):
     code: str
@@ -71,4 +72,8 @@ async def get_last_code():
         with open(SAVE_PATH, "r") as f:
             return json.load(f)
     except:
-        return {"code": "", "language": "python"}
+        try:
+            with open(DEFAULT_CODE_PATH, "r") as f:
+                return json.load(f)
+        except:
+            return {"code": "", "language": "python"}
