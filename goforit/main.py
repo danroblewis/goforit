@@ -14,9 +14,7 @@ app = FastAPI()
 
 # Mount static files
 static_path = os.path.join(os.path.dirname(__file__), "static")
-examples_path = os.path.join(os.path.dirname(__file__), "examples")
 app.mount("/static", StaticFiles(directory=static_path), name="static")
-app.mount("/static/examples", StaticFiles(directory=examples_path), name="examples")
 
 # Enable CORS
 app.add_middleware(
