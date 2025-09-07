@@ -1,35 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Evaluator</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <div id="root">
+    <div class="container">
         <div class="editor-container">
-            <div id="editor"></div>
-            <select id="language" class="language-select">
+            <select id="language" class="language-selector">
                 <option value="python">Python</option>
                 <option value="javascript">JavaScript</option>
                 <option value="typescript">TypeScript</option>
                 <option value="java">Java</option>
                 <option value="cpp">C++</option>
                 <option value="c">C</option>
-                <option value="c_to_asm">C to Assembly</option>
-                <option value="c_to_objdump">C to Objdump</option>
                 <option value="assembly">Assembly</option>
                 <option value="rust">Rust</option>
                 <option value="go">Go</option>
             </select>
+            <div id="editor"></div>
         </div>
         <div id="output" class="output-container"></div>
     </div>
-
     <script type="module">
         import { App } from '/static/js/app.js';
-        
         const app = new App();
         app.initEditor().catch(console.error);
     </script>

@@ -1,88 +1,119 @@
-html, body {
+.container {
+    display: flex;
+    height: 100vh;
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-}
-
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    transition: background-color 0.3s;
-    background-color: #ffffff;
-}
-
-#root {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    overflow: hidden;
+    background-color: #333;
 }
 
 .editor-container {
     flex: 1;
+    min-width: 200px;
     display: flex;
     flex-direction: column;
-    background: transparent;
-    min-width: 0;
+}
+
+.language-selector {
+    padding: 5px;
+    margin: 5px;
+    background-color: #444;
+    color: #fff;
+    border: 1px solid #666;
+    border-radius: 4px;
 }
 
 #editor {
     flex: 1;
-    min-height: 0;
-}
-
-.language-select {
-    height: 40px;
-    background-color: transparent;
-    color: white;
-    border: none;
-    padding: 0 10px;
-    font-size: 14px;
+    min-height: 200px;
 }
 
 .output-container {
     flex: 1;
-    background: transparent;
-    color: white;
-    padding: 20px;
+    min-width: 200px;
+    padding: 10px;
+    overflow-y: auto;
     font-family: monospace;
-    font-size: 12px;
-    overflow: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    min-width: 0;
+    color: #fff;
 }
 
 .code-output-block {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
     white-space: pre;
     word-break: keep-all;
     overflow-x: auto;
 }
 
+.output-separator {
+    border: none;
+    border-top: 1px solid #666;
+    margin: 10px 0;
+}
+
 .output-label {
-    color: #4caf50;
-    margin-bottom: 10px;
+    color: #4ec9b0;
+    margin-bottom: 5px;
 }
 
 .error-label {
-    color: #f44336;
-    margin-bottom: 10px;
+    color: #ce9178;
+    margin-bottom: 5px;
+}
+
+/* Collapsible sections */
+.collapsible-header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 5px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 4px 4px 0 0;
+    margin-bottom: 0;
+}
+
+.collapsible-header:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.collapsible-title {
+    flex: 1;
+    color: #9cdcfe;
+}
+
+.collapsible-button {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 0 10px;
+}
+
+.collapsible-button:hover {
+    color: #9cdcfe;
+}
+
+.collapsible-content {
+    transition: max-height 0.2s ease-out;
+    overflow: hidden;
+}
+
+.collapsible-content.collapsed {
+    max-height: 0;
 }
 
 /* Assembly syntax highlighting */
-.asm-addr { color: #9cdcfe; }    /* Memory addresses */
-.asm-bytes { color: #ce9178; }   /* Hex bytes */
-.asm-mnemonic { color: #c586c0; } /* Instructions like mov, add */
-.asm-comment { color: #6a9955; }  /* Comments */
-.asm-label { color: #4ec9b0; }    /* Labels and function names */
-.asm-reg { color: #9cdcfe; }      /* Registers */
-.asm-meta { color: #808080; }     /* File format info and other metadata */
-.asm-number { color: #b5cea8; }   /* Numbers in comments */
+.asm-label { color: #9cdcfe; }
+.asm-mnemonic { color: #c586c0; }
+.asm-register { color: #4ec9b0; }
+.asm-number { color: #b5cea8; }
+.asm-comment { color: #6a9955; }
+.asm-directive { color: #ce9178; }
+.asm-section { color: #569cd6; }
 
-/* Hexdump syntax highlighting */
-.hexdump-addr { color: #9cdcfe; }  /* Address column */
-.hexdump-hex { color: #ce9178; }   /* Hex values */
-.hexdump-ascii { color: #4ec9b0; } /* ASCII representation */
-.hexdump-sep { color: #808080; }   /* Separators and borders */
+/* Hexdump highlighting */
+.hexdump-addr { color: #9cdcfe; }
+.hexdump-hex { color: #ce9178; }
+.hexdump-ascii { color: #4ec9b0; }
+.hexdump-separator { color: #808080; }

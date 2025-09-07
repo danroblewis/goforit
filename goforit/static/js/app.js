@@ -1,4 +1,4 @@
-import { CodeEvaluator, updateBackgroundColor, renderOutput } from './codeEvaluator.js';
+import { CodeEvaluator, updateBackgroundColor, renderOutput, clearCollapsedState } from './codeEvaluator.js';
 import { registerAssemblyLanguage } from './assemblyLanguage.js';
 
 export class App {
@@ -25,30 +25,26 @@ export class App {
         });
     }
 
-    getEditorLanguage(language) {
-        // Map special language modes to their base language for the editor
-        switch (language) {
-            case 'c_to_asm':
-            case 'c_to_objdump':
+    getEditorLanguage(selectedLanguage) {
+        switch (selectedLanguage) {
+            case 'c':
                 return 'c';
             case 'assembly':
-                return 'asm';  // Use our custom assembly language mode
+                return 'asm';
             default:
-                return language;
+                return selectedLanguage;
         }
     }
 
     async initEditor() {
         await this.loadMonaco();
-
-        // Load last code first to get the correct initial language
         const data = await this.evaluator.loadLastCode();
+        const initialCode = data?.code || '';
         const initialLanguage = data?.language || 'python';
         const editorLang = this.getEditorLanguage(initialLanguage);
 
-        // Create editor with correct initial language
         this.editor = this.monaco.editor.create(document.getElementById('editor'), {
-            value: '',
+            value: initialCode,
             language: editorLang,
             theme: 'vs-dark',
             minimap: { enabled: false },
@@ -70,7 +66,6 @@ export class App {
 
         this.setupEventListeners();
 
-        // Set the language dropdown and code after editor is created
         if (data?.code) {
             document.getElementById('language').value = data.language;
             this.editor.setValue(data.code);
@@ -101,6 +96,7 @@ export class App {
         const newLanguage = e.target.value;
         const editorLang = this.getEditorLanguage(newLanguage);
         this.monaco.editor.setModelLanguage(this.editor.getModel(), editorLang);
+        clearCollapsedState(); // Reset collapsed state when changing languages
         this.handleEditorChange();
     }
 
