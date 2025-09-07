@@ -1,62 +1,123 @@
 # Code Evaluator
 
-A real-time code evaluation system with a split-pane interface. Write code in multiple languages and see the results instantly.
+A real-time code evaluation environment with support for multiple programming languages and assembly output visualization.
 
 ## Features
 
-- Real-time code evaluation
-- Support for multiple programming languages (Python, JavaScript, Java, C++)
-- Split-pane interface with Monaco editor
-- Automatic code persistence
-- Visual feedback for execution status
-- 2-second timeout for all evaluations
+- **Real-time Code Evaluation**: Code is evaluated as you type
+- **Multiple Language Support**:
+  - Python
+  - JavaScript (Node.js)
+  - Java
+  - C++
+  - C
+  - C to Assembly (with architecture detection)
+- **Assembly Output**: View the generated assembly code for C programs with syntax highlighting
+- **Visual Feedback**: Background color changes based on execution status
+  - Dark grayish green: Successful execution with output
+  - Dark grayish red: Compilation/runtime errors
+  - Dark gray: No output
+- **Code Persistence**: Automatically saves and loads your last edited code
+- **Responsive Design**: Fully responsive layout that adapts to window resizing
 
-## Setup
+## Installation
 
-### Backend
+1. Clone the repository:
+```bash
+git clone https://github.com/danroblewis/goforit.git
+cd goforit
+```
 
-1. Install Python dependencies:
+2. Install Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Start the FastAPI server:
+3. Ensure you have the following installed on your system:
+- Python 3.x
+- Node.js (for JavaScript evaluation)
+- GCC (for C/C++ compilation)
+- Java Development Kit (for Java compilation)
+
+## Usage
+
+1. Start the server:
 ```bash
 uvicorn backend.main:app --reload
 ```
 
-The backend will run on http://localhost:8000
+2. Open your browser and navigate to:
+```
+http://localhost:8000
+```
+
+3. Select a language from the dropdown and start coding!
+
+### C to Assembly Features
+
+When using the "C to Assembly" mode:
+- The first line can be a C comment containing compiler flags:
+```c
+// -O3 -march=native
+int main() {
+    return 42;
+}
+```
+- Assembly output shows the architecture (e.g., arm64, x86_64)
+- Assembly is syntax highlighted for better readability
+
+## Technical Details
+
+### Backend
+- FastAPI for the web server
+- Async process execution with timeouts
+- Language-specific runners for each supported language
+- Temporary file management for compiled languages
 
 ### Frontend
+- Single-page application
+- Monaco Editor for code editing
+- Custom assembly syntax highlighting
+- Real-time evaluation with request queuing
+- Responsive layout using CSS Flexbox
 
-1. Install Node.js dependencies:
-```bash
-cd frontend
-npm install
+### Security
+- Process execution timeouts (2 seconds)
+- No concurrent evaluations (queued execution)
+- Proper cleanup of temporary files
+- Process group termination for timeouts
+
+## API Endpoints
+
+- `POST /api/evaluate`: Evaluates code
+  ```json
+  {
+    "code": "print('Hello, World!')",
+    "language": "python"
+  }
+  ```
+
+- `GET /api/last-code`: Retrieves last saved code
+  ```json
+  {
+    "code": "...",
+    "language": "..."
+  }
+  ```
+
+## Development
+
+The project structure:
+```
+goforit/
+├── backend/
+│   ├── main.py           # FastAPI application
+│   ├── language_runners.py # Language-specific runners
+│   └── static/
+│       └── index.html    # Frontend application
+└── requirements.txt      # Python dependencies
 ```
 
-2. Start the React development server:
-```bash
-npm start
-```
+## License
 
-The frontend will run on http://localhost:3000
-
-## Usage
-
-1. Open http://localhost:3000 in your browser
-2. Select your preferred programming language from the dropdown
-3. Start coding in the left pane
-4. See results in real-time in the right pane
-5. The background color will indicate execution status:
-   - Light green: Successful execution
-   - Light red: Errors or stderr output
-
-## Supported Languages
-
-- Python
-- JavaScript
-- Java
-- C++
-
-Each language is executed in its own environment with a 2-second timeout limit.
+MIT License
