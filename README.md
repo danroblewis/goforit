@@ -43,7 +43,7 @@ pip install -r requirements.txt
 
 1. Start the server:
 ```bash
-uvicorn backend.main:app --reload
+uvicorn goforit.main:app --reload
 ```
 
 2. Open your browser and navigate to:
@@ -110,12 +110,29 @@ int main() {
 The project structure:
 ```
 goforit/
-├── backend/
+├── goforit/
 │   ├── main.py           # FastAPI application
 │   ├── language_runners.py # Language-specific runners
+│   ├── tests/            # Python unit tests
 │   └── static/
-│       └── index.html    # Frontend application
+│       ├── index.html    # Frontend application
+│       ├── styles.css    # CSS styles
+│       └── js/           # JavaScript modules and tests
 └── requirements.txt      # Python dependencies
+```
+
+### Running Tests
+
+Run Python tests:
+```bash
+python -m pytest
+```
+
+Run JavaScript tests:
+```bash
+cd goforit/static/js
+npm install
+npm test
 ```
 
 ## License

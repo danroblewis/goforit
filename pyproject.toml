@@ -3,6 +3,6 @@ requires = ["setuptools>=42.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
-testpaths = ["backend/tests"]
+testpaths = ["goforit/tests"]
 python_files = ["test_*.py"]
 asyncio_mode = "strict"
