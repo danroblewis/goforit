@@ -55,6 +55,7 @@ function createCollapsibleSection(title, content, language) {
 }
 
 export function renderOutput(outputDiv, result) {
+    const start = performance.now();
     outputDiv.innerHTML = '';
 
     // Display code outputs first (assembly, objdump, hexdump)
@@ -92,6 +93,7 @@ export function renderOutput(outputDiv, result) {
             outputDiv.appendChild(stderrDiv);
         }
     }
+    console.log(`Render time: ${(performance.now() - start).toFixed(1)}ms`);
 }
 
 export function updateBackgroundColor(result) {
@@ -131,6 +133,7 @@ export class CodeEvaluator {
             const controller = new AbortController();
             
             try {
+                const start = performance.now();
                 this.currentEvaluation = fetch('/api/evaluate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -141,6 +144,7 @@ export class CodeEvaluator {
                 // Wait for the response
                 const response = await this.currentEvaluation;
                 const result = await response.json();
+                console.log(`API request time: ${(performance.now() - start).toFixed(1)}ms`);
 
                 // If there's no next evaluation, return the result
                 if (!this.nextEvaluation) {
