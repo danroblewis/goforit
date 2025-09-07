@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Evaluator</title>
+    <!-- Load Monaco Editor first -->
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        #root {
+            height: 100vh;
+            display: flex;
+        }
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        #editor {
+            flex: 1;
+        }
+        .language-select {
+            height: 40px;
+            background-color: #1e1e1e;
+            color: white;
+            border: none;
+            padding: 0 10px;
+            font-size: 14px;
+        }
+        .output-container {
+            flex: 1;
+            background-color: #1e1e1e;
+            color: white;
+            padding: 20px;
+            font-family: monospace;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .success {
+            color: #4caf50;
+        }
+        .error {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div class="editor-container">
+            <div id="editor"></div>
+            <select id="language" class="language-select">
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="java">Java</option>
+                <option value="cpp">C++</option>
+            </select>
+        </div>
+        <div id="output" class="output-container"></div>
+    </div>
+
+    <script>var require = { paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } };</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.nls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.js"></script>
+
+    <script>
+        let editor;
+        let isEvaluating = false;
+        let pendingEvaluation = null;
+
+        // Initialize Monaco Editor
+        function initEditor() {
+            editor = monaco.editor.create(document.getElementById('editor'), {
+                value: '',
+                language: 'python',
+                theme: 'vs-dark',
+                minimap: { enabled: false },
+                fontSize: 14,
+                wordWrap: 'on'
+            });
+
+            editor.onDidChangeModelContent(() => {
+                queueEvaluation(editor.getValue());
+            });
+
+            loadLastCode();
+        }
+
+        // Queue evaluation request
+        function queueEvaluation(code) {
+            const language = document.getElementById('language').value;
+            
+            // If there's no evaluation in progress, start one
+            if (!isEvaluating) {
+                evaluateCode(code, language);
+            } else {
+                // Store the latest request
+                pendingEvaluation = { code, language };
+            }
+        }
+
+        // Load last saved code
+        async function loadLastCode() {
+            try {
+                const response = await fetch('/api/last-code');
+                const data = await response.json();
+                if (data.code) {
+                    editor.setValue(data.code);
+                    document.getElementById('language').value = data.language;
+                    monaco.editor.setModelLanguage(editor.getModel(), data.language);
+                    await queueEvaluation(data.code);
+                }
+            } catch (error) {
+                console.error('Failed to load last code:', error);
+            }
+        }
+
+        // Evaluate code
+        async function evaluateCode(code, language) {
+            isEvaluating = true;
+
+            try {
+                const response = await fetch('/api/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, language })
+                });
+
+                const result = await response.json();
+                updateOutput(result);
+                updateBackgroundColor(result);
+            } catch (error) {
+                updateOutput({
+                    stdout: '',
+                    stderr: error.message,
+                    return_code: 1
+                });
+                updateBackgroundColor({ return_code: 1, stderr: error.message });
+            } finally {
+                isEvaluating = false;
+                
+                // If there's a pending evaluation, process it
+                if (pendingEvaluation) {
+                    const { code, language } = pendingEvaluation;
+                    pendingEvaluation = null;
+                    evaluateCode(code, language);
+                }
+            }
+        }
+
+        // Update output display
+        function updateOutput(result) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '';
+
+            if (result.stdout) {
+                outputDiv.innerHTML += `<div class="success">Output:</div>${result.stdout}\n`;
+            }
+            if (result.stderr) {
+                outputDiv.innerHTML += `<div class="error">Errors:</div>${result.stderr}`;
+            }
+        }
+
+        // Update background color based on execution result
+        function updateBackgroundColor(result) {
+            const root = document.getElementById('root');
+            const hasError = result.return_code !== 0 || result.stderr.trim() !== '';
+            root.style.backgroundColor = hasError ? '#ffebee' : 
+                                       (result.stdout.trim() !== '' ? '#e8f5e9' : '#ffffff');
+        }
+
+        // Handle language change
+        document.getElementById('language').addEventListener('change', (e) => {
+            const newLanguage = e.target.value;
+            monaco.editor.setModelLanguage(editor.getModel(), newLanguage);
+            queueEvaluation(editor.getValue());
+        });
+
+        // Initialize editor when Monaco is loaded
+        initEditor();
+    </script>
+</body>
+</html>
