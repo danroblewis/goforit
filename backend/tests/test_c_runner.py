@@ -1,5 +1,5 @@
 import pytest
-from ..language_runners import run_c
+from backend.language_runners import run_c
 
 def test_hello_world(run_async):
     code = '''
