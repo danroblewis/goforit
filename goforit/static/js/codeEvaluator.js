@@ -84,7 +84,7 @@ export function renderOutput(outputDiv, result) {
         });
 
         // Add separator
-        codeOutputsDiv.innerHTML += '='.repeat(80) + '\n\n';
+        codeOutputsDiv.innerHTML += '\n\n';
         outputDiv.appendChild(codeOutputsDiv);
     }
 
