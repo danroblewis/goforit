@@ -3,6 +3,7 @@ import os
 import re
 import time
 import asyncio
+import shlex
 from .base import CodeResult, CodeOutput, run_process
 from .utils import detect_system_arch, format_hexdump
 
@@ -12,7 +13,8 @@ def parse_build_flags(code: str) -> list[str]:
     if not flags_match:
         # Default optimization flags for smaller binaries and faster builds
         return ['-ldflags=-s -w']  # Strip debug info and DWARF tables
-    return flags_match.group(1).split()
+    # Use shlex to properly handle quoted strings
+    return shlex.split(flags_match.group(1))
 
 async def run_go(code: str) -> CodeResult:
     start_time = time.time()
