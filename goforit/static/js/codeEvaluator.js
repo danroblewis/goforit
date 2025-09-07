@@ -5,29 +5,28 @@ function escapeHtml(unsafe) {
     return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-// Store collapsed state
+// Store collapsed state by section title
 let collapsedSections = new Map();
 
 export function clearCollapsedState() {
     collapsedSections.clear();
 }
 
-function toggleCollapse(contentId) {
+function toggleCollapse(contentId, title) {
     const content = document.getElementById(contentId);
     const button = document.querySelector(`[data-target="${contentId}"]`);
     const isCollapsed = content.classList.toggle('collapsed');
     button.textContent = isCollapsed ? '▼' : '▲';
-    collapsedSections.set(contentId, isCollapsed);
+    collapsedSections.set(title, isCollapsed);
 }
 
 function createCollapsibleSection(title, content, language) {
     const sectionId = `section-${Math.random().toString(36).substr(2, 9)}`;
     const contentId = `content-${sectionId}`;
-    const wasCollapsed = collapsedSections.get(contentId) ?? true; // Default to collapsed
+    const wasCollapsed = collapsedSections.get(title) ?? true; // Default to collapsed
 
     const section = document.createElement('div');
     section.className = 'code-output-block';
-    section.style.padding = '0';
 
     const header = document.createElement('div');
     header.className = 'collapsible-header';
@@ -44,25 +43,20 @@ function createCollapsibleSection(title, content, language) {
     if (wasCollapsed) {
         contentDiv.classList.add('collapsed');
     }
-
-    // Add padding to content area
-    const contentWrapper = document.createElement('div');
-    contentWrapper.style.padding = '10px';
     
     if (language && language.startsWith('asm-')) {
-        contentWrapper.innerHTML = highlightAssembly(content);
+        contentDiv.innerHTML = highlightAssembly(content);
     } else if (language === 'hexdump') {
-        contentWrapper.innerHTML = highlightHexdump(content);
+        contentDiv.innerHTML = highlightHexdump(content);
     } else {
-        contentWrapper.innerHTML = `<pre>${escapeHtml(content)}</pre>`;
+        contentDiv.innerHTML = `<pre>${escapeHtml(content)}</pre>`;
     }
 
-    contentDiv.appendChild(contentWrapper);
     section.appendChild(header);
     section.appendChild(contentDiv);
 
-    header.addEventListener('click', () => toggleCollapse(contentId));
-    collapsedSections.set(contentId, wasCollapsed);
+    header.addEventListener('click', () => toggleCollapse(contentId, title));
+    collapsedSections.set(title, wasCollapsed);
 
     return section;
 }
@@ -72,7 +66,7 @@ export function renderOutput(outputDiv, result) {
 
     // Display code outputs first (assembly, objdump, hexdump)
     if (result.code_outputs && result.code_outputs.length > 0) {
-        result.code_outputs.forEach((output, index) => {
+        result.code_outputs.forEach(output => {
             let title;
             if (output.language === 'asm-intel') {
                 title = 'Assembly Output (gcc -S)';
@@ -86,19 +80,11 @@ export function renderOutput(outputDiv, result) {
 
             const section = createCollapsibleSection(title, output.content, output.language);
             outputDiv.appendChild(section);
-
-            if (index < result.code_outputs.length - 1) {
-                outputDiv.appendChild(document.createElement('hr'));
-            }
         });
     }
 
     // Then display stdout/stderr as regular sections
     if (result.stdout || result.stderr) {
-        if (result.code_outputs && result.code_outputs.length > 0) {
-            outputDiv.appendChild(document.createElement('hr'));
-        }
-
         if (result.stdout) {
             const stdoutDiv = document.createElement('div');
             stdoutDiv.className = 'program-output';
@@ -107,9 +93,6 @@ export function renderOutput(outputDiv, result) {
         }
 
         if (result.stderr) {
-            if (result.stdout) {
-                outputDiv.appendChild(document.createElement('hr'));
-            }
             const stderrDiv = document.createElement('div');
             stderrDiv.className = 'program-output';
             stderrDiv.innerHTML = `<div class="error-label">Program Errors</div><pre>${escapeHtml(result.stderr)}</pre>`;

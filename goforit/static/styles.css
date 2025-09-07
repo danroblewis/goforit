@@ -11,7 +11,7 @@
     min-width: 200px;
     display: flex;
     flex-direction: column;
-    position: relative; /* For absolute positioning of language selector */
+    position: relative;
 }
 
 .language-selector {
@@ -42,18 +42,9 @@
 
 .code-output-block {
     margin-bottom: 10px;
-    padding: 10px;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
     white-space: pre;
     word-break: keep-all;
     overflow-x: auto;
-}
-
-.output-separator {
-    border: none;
-    border-top: 1px solid rgba(102, 102, 102, 0.7);
-    margin: 10px 0;
 }
 
 .program-output {
@@ -82,13 +73,12 @@
     align-items: center;
     cursor: pointer;
     padding: 5px;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 4px 4px 0 0;
     margin-bottom: 0;
+    opacity: 0.7;
 }
 
 .collapsible-header:hover {
-    background-color: rgba(0, 0, 0, 0.4);
+    opacity: 1;
 }
 
 .collapsible-title {
@@ -111,6 +101,7 @@
 .collapsible-content {
     transition: max-height 0.2s ease-out;
     overflow: hidden;
+    padding: 0 5px;
 }
 
 .collapsible-content.collapsed {
