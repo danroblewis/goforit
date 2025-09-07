@@ -1,13 +1,13 @@
-import json
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
+import json
 from typing import Optional, List
 
-from .language_runners import LANGUAGE_RUNNERS, CodeResult, CodeOutput
+from .runners import LANGUAGE_RUNNERS, CodeOutput
 
 app = FastAPI()
 
@@ -24,9 +24,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Paths for code storage
+# Path to store the last code
 SAVE_PATH = "last_code.json"
-DEFAULT_CODE_PATH = os.path.join(os.path.dirname(__file__), "default_code.json")
 
 class CodeRequest(BaseModel):
     code: str
@@ -73,7 +72,8 @@ async def get_last_code():
             return json.load(f)
     except:
         try:
-            with open(DEFAULT_CODE_PATH, "r") as f:
+            default_code_path = os.path.join(os.path.dirname(__file__), "default_code.json")
+            with open(default_code_path, "r") as f:
                 return json.load(f)
         except:
             return {"code": "", "language": "python"}
