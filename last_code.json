@@ -1,1 +1,0 @@
-{"code": "#import <stdio.h>\n\nint main() {\n    printf(\"asdddsdf\\n\");\n    return 0;\n}\n", "language": "cpp"}
