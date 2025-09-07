@@ -67,6 +67,15 @@ export function updateBackgroundColor(result) {
                                         (result.stdout.trim() !== '' ? '#1a2a1a' : '#2a2a2a'); // darker grayish green : dark gray
 }
 
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 export function renderOutput(outputDiv, result) {
     outputDiv.innerHTML = '';
 
@@ -92,13 +101,13 @@ export function renderOutput(outputDiv, result) {
     if (result.stdout) {
         const stdoutDiv = document.createElement('div');
         stdoutDiv.className = 'code-output-block';
-        stdoutDiv.innerHTML = `<div class="output-label">Output:</div>${result.stdout}`;
+        stdoutDiv.innerHTML = `<div class="output-label">Output:</div><pre>${escapeHtml(result.stdout)}</pre>`;
         outputDiv.appendChild(stdoutDiv);
     }
     if (result.stderr) {
         const stderrDiv = document.createElement('div');
         stderrDiv.className = 'code-output-block';
-        stderrDiv.innerHTML = `<div class="error-label">Errors:</div>${result.stderr}`;
+        stderrDiv.innerHTML = `<div class="error-label">Errors:</div><pre>${escapeHtml(result.stderr)}</pre>`;
         outputDiv.appendChild(stderrDiv);
     }
 }
