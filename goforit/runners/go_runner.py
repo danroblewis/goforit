@@ -5,11 +5,6 @@ from .utils import detect_system_arch, format_hexdump
 
 async def run_go(code: str) -> CodeResult:
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Create a Go module
-        module_result = await run_process(['go', 'mod', 'init', 'example'], cwd=tmpdir)
-        if module_result.return_code != 0:
-            return module_result
-
         # Write the code
         main_go = os.path.join(tmpdir, 'main.go')
         with open(main_go, 'w') as f:
@@ -17,9 +12,9 @@ async def run_go(code: str) -> CodeResult:
                 code = 'package main\n\n' + code
             f.write(code)
 
-        # Build the program
+        # Build the program with -mod=mod to avoid needing go.mod
         executable = os.path.join(tmpdir, 'main')
-        build_result = await run_process(['go', 'build', '-o', executable, main_go], cwd=tmpdir)
+        build_result = await run_process(['go', 'build', '-mod=mod', '-o', executable, main_go])
         if build_result.return_code != 0:
             return build_result
 
@@ -38,7 +33,7 @@ async def run_go(code: str) -> CodeResult:
             hexdump = f"Failed to read binary: {str(e)}"
 
         # Run the program
-        run_result = await run_process(['go', 'run', main_go], cwd=tmpdir)
+        run_result = await run_process(['go', 'run', '-mod=mod', main_go])
         
         # Add objdump and hexdump outputs
         run_result.code_outputs = [
