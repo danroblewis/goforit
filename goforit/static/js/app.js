@@ -29,6 +29,8 @@ export class App {
             case 'c_to_asm':
             case 'c_to_objdump':
                 return 'c';
+            case 'assembly':
+                return 'arm';  // Monaco's built-in assembly language mode
             default:
                 return language;
         }

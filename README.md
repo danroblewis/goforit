@@ -42,7 +42,9 @@ Options:
   - Java
   - C++
   - C
-  - C to Assembly (with architecture detection)
+  - C to Assembly (gcc -S output)
+  - C to Objdump (disassembled binary)
+  - Assembly (x86, x86_64, ARM64)
   - Rust
   - Go
 - **Assembly Output**: View the generated assembly code for C programs with syntax highlighting
@@ -61,6 +63,8 @@ You'll need these installed for the languages you want to use:
 - TypeScript (`npm install -g typescript`)
 - Java Development Kit (for Java)
 - GCC (for C/C++)
+- NASM (for x86/x86_64 assembly)
+- AS (for ARM64 assembly)
 - Rust (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
 - Go (`brew install go` on macOS)
 
@@ -89,18 +93,55 @@ uvicorn goforit.main:app --reload
 http://localhost:8000
 ```
 
-## C to Assembly Features
+## Assembly Language Support
 
-When using the "C to Assembly" mode:
-- The first line can be a C comment containing compiler flags:
+### Direct Assembly Mode
+When using the "Assembly" mode, specify the architecture and syntax in the first line comment:
+```nasm
+// arch: x86_64 syntax: intel
+section .data
+    msg db 'Hello, World!', 0xa
+    len equ $ - msg
+
+section .text
+    global _start
+_start:
+    mov rax, 1      ; write syscall
+    mov rdi, 1      ; stdout
+    mov rsi, msg    ; message
+    mov rdx, len    ; length
+    syscall
+    mov rax, 60     ; exit syscall
+    xor rdi, rdi    ; status 0
+    syscall
+```
+
+Supported architectures:
+- `x86_64`: 64-bit x86 assembly
+- `x86`: 32-bit x86 assembly
+- `arm64`: ARM64 assembly (Apple Silicon/M1/M2)
+
+Supported syntaxes:
+- `intel`: Intel syntax (default)
+- `att`: AT&T syntax
+
+### C to Assembly Mode
+Shows the compiler's assembly output using `gcc -S`:
 ```c
 // -O3 -march=native
 int main() {
     return 42;
 }
 ```
-- Assembly output shows the architecture (e.g., arm64, x86_64)
-- Assembly is syntax highlighted for better readability
+
+### C to Objdump Mode
+Shows disassembled binary using `objdump -d`:
+```c
+// -O3 -march=native
+int main() {
+    return 42;
+}
+```
 
 ## Technical Details
 
@@ -150,6 +191,7 @@ goforit/
 │   ├── main.py           # FastAPI application
 │   ├── language_runners.py # Language-specific runners
 │   ├── cli.py            # Command-line interface
+│   ├── examples/         # Example programs
 │   ├── tests/            # Python unit tests
 │   └── static/
 │       ├── index.html    # Frontend application
