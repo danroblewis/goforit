@@ -3,11 +3,12 @@
 <head>
     <title>Code Evaluator</title>
     <link rel="stylesheet" href="/static/styles.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 </head>
 <body>
     <div class="container">
         <div class="editor-container">
+            <button id="examples-button" class="examples-button">Examples ▾</button>
+            <div id="examples-menu" class="examples-menu"></div>
             <select id="language" class="language-selector">
                 <option value="python">Python</option>
                 <option value="javascript">JavaScript</option>
@@ -15,6 +16,8 @@
                 <option value="java">Java</option>
                 <option value="cpp">C++</option>
                 <option value="c">C</option>
+                <option value="c_to_asm">C to Assembly</option>
+                <option value="c_to_objdump">C to Objdump</option>
                 <option value="assembly">Assembly</option>
                 <option value="rust">Rust</option>
                 <option value="go">Go</option>

@@ -6,6 +6,19 @@ export class App {
         this.editor = null;
         this.monaco = null;
         this.evaluator = new CodeEvaluator();
+        this.examples = {
+            'python': '/static/examples/Python.py',
+            'javascript': '/static/examples/JavaScript.js',
+            'typescript': '/static/examples/TypeScript.ts',
+            'java': '/static/examples/Example.java',
+            'cpp': '/static/examples/CPP.cpp',
+            'c': '/static/examples/C.c',
+            'c_to_asm': '/static/examples/CToAssembly.c',
+            'c_to_objdump': '/static/examples/CToObjdump.c',
+            'assembly': '/static/examples/Assembly.asm',
+            'rust': '/static/examples/Rust.rs',
+            'go': '/static/examples/Go.go'
+        };
     }
 
     async loadMonaco() {
@@ -27,6 +40,8 @@ export class App {
 
     getEditorLanguage(selectedLanguage) {
         switch (selectedLanguage) {
+            case 'c_to_asm':
+            case 'c_to_objdump':
             case 'c':
                 return 'c';
             case 'assembly':
@@ -34,6 +49,51 @@ export class App {
             default:
                 return selectedLanguage;
         }
+    }
+
+    async loadExample(language) {
+        const url = this.examples[language];
+        if (!url) return;
+
+        try {
+            const response = await fetch(url);
+            const code = await response.text();
+            this.editor.setValue(code);
+            document.getElementById('language').value = language;
+            this.monaco.editor.setModelLanguage(this.editor.getModel(), this.getEditorLanguage(language));
+            this.handleEditorChange();
+        } catch (error) {
+            console.error('Failed to load example:', error);
+        }
+    }
+
+    setupExamplesMenu() {
+        const button = document.getElementById('examples-button');
+        const menu = document.getElementById('examples-menu');
+
+        // Create menu items
+        Object.entries(this.examples).forEach(([language, _]) => {
+            const item = document.createElement('div');
+            item.className = 'example-item';
+            item.textContent = language.charAt(0).toUpperCase() + language.slice(1).replace(/_/g, ' ');
+            item.addEventListener('click', () => {
+                this.loadExample(language);
+                menu.classList.remove('visible');
+            });
+            menu.appendChild(item);
+        });
+
+        // Toggle menu
+        button.addEventListener('click', () => {
+            menu.classList.toggle('visible');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!button.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.remove('visible');
+            }
+        });
     }
 
     async initEditor() {
@@ -65,6 +125,7 @@ export class App {
         this.monaco.editor.setTheme('custom-vs-dark');
 
         this.setupEventListeners();
+        this.setupExamplesMenu();
 
         if (data?.code) {
             document.getElementById('language').value = data.language;
@@ -96,7 +157,7 @@ export class App {
         const newLanguage = e.target.value;
         const editorLang = this.getEditorLanguage(newLanguage);
         this.monaco.editor.setModelLanguage(this.editor.getModel(), editorLang);
-        clearCollapsedState(); // Reset collapsed state when changing languages
+        clearCollapsedState();
         this.handleEditorChange();
     }
 

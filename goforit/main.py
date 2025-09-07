@@ -1,19 +1,21 @@
+import json
+import os
+from typing import Optional, List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import os
-import json
-from typing import Optional, List
 
-from .runners import LANGUAGE_RUNNERS, CodeOutput
+from .runners import LANGUAGE_RUNNERS, CodeResult, CodeOutput
 
 app = FastAPI()
 
 # Mount static files
 static_path = os.path.join(os.path.dirname(__file__), "static")
+examples_path = os.path.join(os.path.dirname(__file__), "examples")
 app.mount("/static", StaticFiles(directory=static_path), name="static")
+app.mount("/static/examples", StaticFiles(directory=examples_path), name="examples")
 
 # Enable CORS
 app.add_middleware(
@@ -26,6 +28,7 @@ app.add_middleware(
 
 # Path to store the last code
 SAVE_PATH = "last_code.json"
+DEFAULT_CODE_PATH = os.path.join(os.path.dirname(__file__), "default_code.json")
 
 class CodeRequest(BaseModel):
     code: str
@@ -70,10 +73,13 @@ async def get_last_code():
     try:
         with open(SAVE_PATH, "r") as f:
             return json.load(f)
-    except:
+    except FileNotFoundError:
         try:
-            default_code_path = os.path.join(os.path.dirname(__file__), "default_code.json")
-            with open(default_code_path, "r") as f:
+            with open(DEFAULT_CODE_PATH, "r") as f:
                 return json.load(f)
-        except:
+        except FileNotFoundError:
             return {"code": "", "language": "python"}
+        except Exception:
+            return {"code": "", "language": "python"}
+    except Exception:
+        return {"code": "", "language": "python"}
