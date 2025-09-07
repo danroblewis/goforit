@@ -2,7 +2,6 @@ import asyncio
 import tempfile
 import os
 import re
-import platform
 from typing import Tuple, Optional
 from dataclasses import dataclass
 
@@ -17,6 +16,40 @@ class CodeResult:
         self.stderr = stderr
         self.return_code = return_code
         self.code_outputs = code_outputs or []
+
+def format_hexdump(data: bytes, width: int = 16) -> str:
+    """Format binary data as a hexdump with address, hex values, and ASCII representation."""
+    result = []
+    for i in range(0, len(data), width):
+        chunk = data[i:i + width]
+        # Address
+        result.append(f"{i:08x}  ")
+        
+        # Hex values
+        hex_values = []
+        ascii_values = []
+        
+        for j, byte in enumerate(chunk):
+            hex_values.append(f"{byte:02x}")
+            # Add extra space every 8 bytes
+            if j % 8 == 7:
+                hex_values.append(" ")
+            # Printable ASCII or dot
+            ascii_values.append(chr(byte) if 32 <= byte <= 126 else ".")
+        
+        # Pad hex values if not a full line
+        while len(hex_values) < width + (width // 8):
+            hex_values.append("  ")
+            if len(hex_values) % 9 == 8:  # Account for the extra spaces
+                hex_values.append(" ")
+        
+        # Combine parts
+        result.append(" ".join(hex_values))
+        result.append(" |")
+        result.append("".join(ascii_values))
+        result.append("|\n")
+    
+    return "".join(result)
 
 async def run_process(cmd: list[str], input_text: Optional[str] = None, timeout: int = 2) -> CodeResult:
     try:
@@ -218,6 +251,19 @@ async def run_c_to_objdump(code: str) -> CodeResult:
         if objdump_result.return_code != 0:
             return objdump_result
 
+        # Get hex dump
+        hexdump_result = await run_process(['objdump', '-s', object_file])
+        if hexdump_result.return_code != 0:
+            # If objdump -s fails, read the file and format it ourselves
+            try:
+                with open(object_file, 'rb') as f:
+                    binary_data = f.read()
+                hexdump = format_hexdump(binary_data)
+            except Exception as e:
+                hexdump = f"Failed to read binary: {str(e)}"
+        else:
+            hexdump = hexdump_result.stdout
+
         # Clean up the objdump output by removing temp directory paths
         cleaned_output = objdump_result.stdout.replace(os.path.dirname(c_file) + '/', '')
 
@@ -247,13 +293,14 @@ async def run_c_to_objdump(code: str) -> CodeResult:
         # Run the program
         run_result = await run_process([executable])
         
-        # Return assembly and program output
+        # Return assembly, hex dump, and program output
         return CodeResult(
             stdout=run_result.stdout,
             stderr=run_result.stderr,
             return_code=run_result.return_code,
             code_outputs=[
-                CodeOutput(content=cleaned_output, language=f"asm-{arch_type}")
+                CodeOutput(content=cleaned_output, language=f"asm-{arch_type}"),
+                CodeOutput(content=hexdump, language="hexdump")
             ]
         )
     
@@ -347,8 +394,17 @@ async def run_assembly(code: str) -> CodeResult:
                 if link_result.return_code != 0:
                     return link_result
 
+            # Get hex dump
+            try:
+                with open(obj_file, 'rb') as f:
+                    binary_data = f.read()
+                hexdump = format_hexdump(binary_data)
+            except Exception as e:
+                hexdump = f"Failed to read binary: {str(e)}"
+
             # Run the program
             run_result = await run_process([executable])
+            run_result.code_outputs = [CodeOutput(content=hexdump, language="hexdump")]
             return run_result
 
         except Exception as e:

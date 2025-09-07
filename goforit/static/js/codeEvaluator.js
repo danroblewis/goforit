@@ -1,4 +1,5 @@
 import { highlightAssembly } from './assemblyHighlighter.js';
+import { highlightHexdump } from './hexdumpHighlighter.js';
 
 export class CodeEvaluator {
     constructor() {
@@ -79,7 +80,7 @@ function escapeHtml(unsafe) {
 export function renderOutput(outputDiv, result) {
     outputDiv.innerHTML = '';
 
-    // Display code outputs first (assembly)
+    // Display code outputs first (assembly/hexdump)
     if (result.code_outputs && result.code_outputs.length > 0) {
         const codeOutputsDiv = document.createElement('div');
         codeOutputsDiv.className = 'code-output-block';
@@ -87,6 +88,8 @@ export function renderOutput(outputDiv, result) {
         result.code_outputs.forEach(output => {
             if (output.language && output.language.startsWith('asm-')) {
                 codeOutputsDiv.innerHTML += highlightAssembly(output.content) + '\n';
+            } else if (output.language === 'hexdump') {
+                codeOutputsDiv.innerHTML += highlightHexdump(output.content) + '\n';
             } else {
                 codeOutputsDiv.textContent += output.content + '\n';
             }

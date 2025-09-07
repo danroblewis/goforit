@@ -61,10 +61,6 @@ body {
     overflow-x: auto;
 }
 
-.code-output-block pre {
-    text-wrap: wrap;
-}
-
 .output-label {
     color: #4caf50;
     margin-bottom: 10px;
@@ -84,3 +80,9 @@ body {
 .asm-reg { color: #9cdcfe; }      /* Registers */
 .asm-meta { color: #808080; }     /* File format info and other metadata */
 .asm-number { color: #b5cea8; }   /* Numbers in comments */
+
+/* Hexdump syntax highlighting */
+.hexdump-addr { color: #9cdcfe; }  /* Address column */
+.hexdump-hex { color: #ce9178; }   /* Hex values */
+.hexdump-ascii { color: #4ec9b0; } /* ASCII representation */
+.hexdump-sep { color: #808080; }   /* Separators and borders */
