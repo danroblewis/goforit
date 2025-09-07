@@ -30,7 +30,7 @@ export class App {
             case 'c_to_objdump':
                 return 'c';
             case 'assembly':
-                return 'arm';  // Monaco's built-in assembly language mode
+                return 'nasm';  // Use NASM mode for assembly syntax highlighting
             default:
                 return language;
         }
