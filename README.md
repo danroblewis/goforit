@@ -6,7 +6,7 @@ A real-time code evaluation environment with support for multiple programming la
 
 Install and run with a single command:
 ```bash
-uv pip install "git+https://github.com/danroblewis/goforit.git"
+uv pip install --force-reinstall "git+https://github.com/danroblewis/goforit.git"
 goforit
 ```
 
