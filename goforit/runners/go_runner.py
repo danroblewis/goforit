@@ -42,9 +42,23 @@ async def run_go(code: str) -> CodeResult:
             f.write('\n'.join(code_lines))
         write_time = time.time() - start_time
 
-        # Build the program with -mod=mod to avoid needing go.mod
+        # Build both a shared object (for analysis) and executable (for running)
         build_start = time.time()
         executable = os.path.join(tmpdir, 'main')
+        shared_obj = os.path.join(tmpdir, 'main.so')
+
+        # Build shared object first
+        shared_cmd = ['go', 'build', '-mod=mod', '-buildmode=c-shared', '-o', shared_obj]
+        shared_cmd.extend(build_flags)
+        shared_cmd.append(main_go)
+        
+        shared_result = await run_process(shared_cmd)
+        if shared_result.return_code != 0:
+            print(f"Write time: {write_time:.3f}s")
+            print(f"Build time: {time.time() - build_start:.3f}s")
+            return shared_result
+
+        # Build executable for running
         build_cmd = ['go', 'build', '-mod=mod', '-o', executable]
         build_cmd.extend(build_flags)
         build_cmd.append(main_go)
@@ -56,23 +70,23 @@ async def run_go(code: str) -> CodeResult:
             return build_result
         build_time = time.time() - build_start
 
-        # Run everything in parallel: objdump, hexdump, and program execution
+        # Run everything in parallel: objdump, hexdump of shared object, and program execution
         parallel_start = time.time()
         arch = detect_system_arch()
         
-        # Read binary for hexdump
+        # Read shared object for hexdump
         try:
-            with open(executable, 'rb') as f:
+            with open(shared_obj, 'rb') as f:
                 binary_data = f.read()
         except Exception as e:
-            print(f"Error reading binary: {e}")
+            print(f"Error reading shared object: {e}")
             binary_data = b''
         
         # Create tasks for parallel execution
         tasks = [
-            run_process(['objdump', '-d', executable]),  # objdump
-            format_hexdump(binary_data),                 # hexdump
-            run_process([executable])                    # program execution
+            run_process(['objdump', '-d', shared_obj]),  # objdump shared object
+            format_hexdump(binary_data),                 # hexdump shared object
+            run_process([executable])                    # run the program
         ]
         
         # Run all tasks in parallel and wait for results
