@@ -189,7 +189,6 @@ async def run_cpp(code: str) -> CodeResult:
 
 async def run_java(code: str) -> CodeResult:
     # Java requires a class definition, so we need to extract the class name
-    # and create a temporary file with the correct name
     import re
     
     # Try to find the public class name
@@ -227,6 +226,56 @@ async def run_java(code: str) -> CodeResult:
                 return_code=1
             )
 
+async def run_rust(code: str) -> CodeResult:
+    # Create a temporary directory for the Rust project
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create a basic Rust project structure
+        main_rs = os.path.join(tmpdir, 'main.rs')
+        
+        # Write the code to main.rs
+        with open(main_rs, 'w') as f:
+            f.write(code)
+        
+        try:
+            # Compile the Rust code
+            compile_result = await run_process(['rustc', main_rs, '-o', os.path.join(tmpdir, 'program')])
+            if compile_result.return_code != 0:
+                return compile_result
+            
+            # Run the program
+            return await run_process([os.path.join(tmpdir, 'program')])
+        
+        except Exception as e:
+            return CodeResult(
+                stdout="",
+                stderr=f"Failed to execute Rust code: {str(e)}",
+                return_code=1
+            )
+
+async def run_go(code: str) -> CodeResult:
+    # Create a temporary directory for the Go project
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create main.go
+        main_go = os.path.join(tmpdir, 'main.go')
+        
+        # Write the code to main.go
+        with open(main_go, 'w') as f:
+            # If no package main is specified, add it
+            if not code.strip().startswith('package main'):
+                code = 'package main\n\n' + code
+            f.write(code)
+        
+        try:
+            # Run the Go code directly (go run compiles and runs in one step)
+            return await run_process(['go', 'run', main_go])
+        
+        except Exception as e:
+            return CodeResult(
+                stdout="",
+                stderr=f"Failed to execute Go code: {str(e)}",
+                return_code=1
+            )
+
 # Map of language identifiers to their runner functions
 LANGUAGE_RUNNERS = {
     'python': run_python,
@@ -234,5 +283,7 @@ LANGUAGE_RUNNERS = {
     'java': run_java,
     'cpp': run_cpp,
     'c': run_c,
-    'c_to_asm': run_c_to_asm
+    'c_to_asm': run_c_to_asm,
+    'rust': run_rust,
+    'go': run_go
 }
