@@ -2,16 +2,32 @@
 
 A real-time code evaluation environment with support for multiple programming languages and assembly output visualization.
 
+## Quick Start
+
+Install and run with a single command:
+```bash
+uv pip install "git+https://github.com/danroblewis/goforit.git"
+goforit
+```
+
+This will:
+1. Install the package and its dependencies
+2. Start the server on a free port
+3. Open your browser automatically
+
 ## Features
 
 - **Real-time Code Evaluation**: Code is evaluated as you type
 - **Multiple Language Support**:
   - Python
-  - JavaScript (Node.js)
+  - JavaScript
+  - TypeScript
   - Java
   - C++
   - C
   - C to Assembly (with architecture detection)
+  - Rust
+  - Go
 - **Assembly Output**: View the generated assembly code for C programs with syntax highlighting
 - **Visual Feedback**: Background color changes based on execution status
   - Dark grayish green: Successful execution with output
@@ -20,7 +36,20 @@ A real-time code evaluation environment with support for multiple programming la
 - **Code Persistence**: Automatically saves and loads your last edited code
 - **Responsive Design**: Fully responsive layout that adapts to window resizing
 
-## Installation
+## Prerequisites
+
+You'll need these installed for the languages you want to use:
+- Python 3.8 or later (required)
+- Node.js (for JavaScript/TypeScript)
+- TypeScript (`npm install -g typescript`)
+- Java Development Kit (for Java)
+- GCC (for C/C++)
+- Rust (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
+- Go (`brew install go` on macOS)
+
+## Manual Installation
+
+If you prefer to install manually:
 
 1. Clone the repository:
 ```bash
@@ -33,27 +62,17 @@ cd goforit
 pip install -r requirements.txt
 ```
 
-3. Ensure you have the following installed on your system:
-- Python 3.x
-- Node.js (for JavaScript evaluation)
-- GCC (for C/C++ compilation)
-- Java Development Kit (for Java compilation)
-
-## Usage
-
-1. Start the server:
+3. Start the server:
 ```bash
 uvicorn goforit.main:app --reload
 ```
 
-2. Open your browser and navigate to:
+4. Open your browser and navigate to:
 ```
 http://localhost:8000
 ```
 
-3. Select a language from the dropdown and start coding!
-
-### C to Assembly Features
+## C to Assembly Features
 
 When using the "C to Assembly" mode:
 - The first line can be a C comment containing compiler flags:
@@ -113,11 +132,13 @@ goforit/
 ├── goforit/
 │   ├── main.py           # FastAPI application
 │   ├── language_runners.py # Language-specific runners
+│   ├── cli.py            # Command-line interface
 │   ├── tests/            # Python unit tests
 │   └── static/
 │       ├── index.html    # Frontend application
 │       ├── styles.css    # CSS styles
 │       └── js/           # JavaScript modules and tests
+├── pyproject.toml        # Python package configuration
 └── requirements.txt      # Python dependencies
 ```
 

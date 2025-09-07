@@ -1,6 +1,25 @@
 [build-system]
-requires = ["setuptools>=42.0", "wheel"]
-build-goforit = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "goforit"
+version = "0.1.0"
+description = "A real-time code evaluation environment with support for multiple programming languages"
+readme = "README.md"
+authors = [
+    { name = "Daniel Lewis", email = "danroblewis@mac.lan" }
+]
+dependencies = [
+    "fastapi>=0.104.1",
+    "uvicorn>=0.24.0",
+    "python-multipart>=0.0.6",
+    "aiofiles>=23.2.1"
+]
+requires-python = ">=3.8"
+
+[project.scripts]
+goforit = "goforit.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["goforit/tests"]
