@@ -42,6 +42,12 @@ async def run_go(code: str) -> CodeResult:
             f.write('\n'.join(code_lines))
         write_time = time.time() - start_time
 
+        # Get GOROOT and standard library paths
+        goroot_result = await run_process(['go', 'env', 'GOROOT'])
+        if goroot_result.return_code != 0:
+            return goroot_result
+        goroot = goroot_result.stdout.strip()
+
         # Build the program with -mod=mod to avoid needing go.mod
         build_start = time.time()
         executable = os.path.join(tmpdir, 'main')
@@ -70,8 +76,12 @@ async def run_go(code: str) -> CodeResult:
         
         # Create tasks for parallel execution
         tasks = [
-            # Get assembly from go build -work -a -x which will show the compile command
-            run_process(['go', 'build', '-work', '-a', '-x', main_go]),
+            # Get assembly from go tool compile with standard library paths
+            run_process([
+                'go', 'tool', 'compile',
+                '-I', os.path.join(goroot, 'pkg', arch),  # Standard library compiled packages
+                '-S', main_go
+            ]),
             # Get objdump of just our functions
             run_process(['go', 'tool', 'objdump', '-s', 'main\.', executable]),
             format_hexdump(binary_data),                 # hexdump of first 1KB
@@ -81,17 +91,7 @@ async def run_go(code: str) -> CodeResult:
         # Run all tasks in parallel and wait for results
         try:
             results = await asyncio.gather(*tasks)
-            build_verbose_result, objdump_result, hexdump_output, run_result = results
-            
-            # Extract the compile command from build -x output
-            compile_cmd_match = re.search(r'WORK=([^\s]+).*\ncompile[^\n]+', build_verbose_result.stderr)
-            if compile_cmd_match:
-                work_dir = compile_cmd_match.group(1)
-                # Now run compile -S in the work directory where all imports are set up
-                asm_result = await run_process(['go', 'tool', 'compile', '-S', main_go], cwd=work_dir)
-            else:
-                asm_result = CodeResult(stdout="", stderr="Could not find compile command", return_code=1)
-                
+            asm_result, objdump_result, hexdump_output, run_result = results
         except Exception as e:
             print(f"Error in parallel execution: {e}")
             return CodeResult(stdout="", stderr=str(e), return_code=1)
