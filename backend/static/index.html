@@ -11,6 +11,8 @@
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: background-color 0.3s;
+            background-color: #ffffff;
         }
         #root {
             height: 100vh;
@@ -20,6 +22,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            background: transparent;
         }
         #editor {
             flex: 1;
@@ -34,7 +37,7 @@
         }
         .output-container {
             flex: 1;
-            background-color: #1e1e1e;
+            background: transparent;
             color: white;
             padding: 20px;
             font-family: monospace;
@@ -42,11 +45,13 @@
             white-space: pre-wrap;
             word-break: break-all;
         }
-        .success {
+        .output-label {
             color: #4caf50;
+            margin-bottom: 10px;
         }
-        .error {
+        .error-label {
             color: #f44336;
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -59,6 +64,8 @@
                 <option value="javascript">JavaScript</option>
                 <option value="java">Java</option>
                 <option value="cpp">C++</option>
+                <option value="c">C</option>
+                <option value="c_to_asm">C to Assembly</option>
             </select>
         </div>
         <div id="output" class="output-container"></div>
@@ -82,8 +89,20 @@
                 theme: 'vs-dark',
                 minimap: { enabled: false },
                 fontSize: 14,
-                wordWrap: 'on'
+                wordWrap: 'on',
+                backgroundColor: 'transparent'
             });
+
+            // Override the default editor background
+            monaco.editor.defineTheme('custom-vs-dark', {
+                base: 'vs-dark',
+                inherit: true,
+                rules: [],
+                colors: {
+                    'editor.background': '#00000000'
+                }
+            });
+            monaco.editor.setTheme('custom-vs-dark');
 
             editor.onDidChangeModelContent(() => {
                 queueEvaluation(editor.getValue());
@@ -113,7 +132,9 @@
                 if (data.code) {
                     editor.setValue(data.code);
                     document.getElementById('language').value = data.language;
-                    monaco.editor.setModelLanguage(editor.getModel(), data.language);
+                    // Always use 'c' as the editor language for both C and C to Assembly
+                    const editorLang = data.language === 'c_to_asm' ? 'c' : data.language;
+                    monaco.editor.setModelLanguage(editor.getModel(), editorLang);
                     await queueEvaluation(data.code);
                 }
             } catch (error) {
@@ -160,25 +181,26 @@
             outputDiv.innerHTML = '';
 
             if (result.stdout) {
-                outputDiv.innerHTML += `<div class="success">Output:</div>${result.stdout}\n`;
+                outputDiv.innerHTML += `<div class="output-label">Output:</div>${result.stdout}\n`;
             }
             if (result.stderr) {
-                outputDiv.innerHTML += `<div class="error">Errors:</div>${result.stderr}`;
+                outputDiv.innerHTML += `<div class="error-label">Errors:</div>${result.stderr}`;
             }
         }
 
         // Update background color based on execution result
         function updateBackgroundColor(result) {
-            const root = document.getElementById('root');
             const hasError = result.return_code !== 0 || result.stderr.trim() !== '';
-            root.style.backgroundColor = hasError ? '#ffebee' : 
-                                       (result.stdout.trim() !== '' ? '#e8f5e9' : '#ffffff');
+            document.body.style.backgroundColor = hasError ? '#2a1a1a' : // darker grayish red
+                                                (result.stdout.trim() !== '' ? '#1a2a1a' : '#2a2a2a'); // darker grayish green : dark gray
         }
 
         // Handle language change
         document.getElementById('language').addEventListener('change', (e) => {
             const newLanguage = e.target.value;
-            monaco.editor.setModelLanguage(editor.getModel(), newLanguage);
+            // Always use 'c' as the editor language for both C and C to Assembly
+            const editorLang = newLanguage === 'c_to_asm' ? 'c' : newLanguage;
+            monaco.editor.setModelLanguage(editor.getModel(), editorLang);
             queueEvaluation(editor.getValue());
         });
 

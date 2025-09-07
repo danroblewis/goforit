@@ -49,8 +49,100 @@ async def run_python(code: str) -> CodeResult:
 async def run_javascript(code: str) -> CodeResult:
     return await run_process(['node', '-e', code])
 
+async def run_c(code: str) -> CodeResult:
+    # For C, we need to compile, so we'll use a temp file
+    with tempfile.NamedTemporaryFile(suffix='.c', mode='w', delete=False) as f:
+        f.write(code)
+        c_file = f.name
+    
+    try:
+        # Compile
+        executable = c_file + '.out'
+        compile_result = await run_process(['gcc', c_file, '-o', executable])
+        
+        if compile_result.return_code != 0:
+            return compile_result
+        
+        # Run
+        run_result = await run_process([executable])
+        return run_result
+    
+    finally:
+        # Cleanup
+        try:
+            os.unlink(c_file)
+            os.unlink(executable)
+        except:
+            pass
+
+async def run_c_to_asm(code: str) -> CodeResult:
+    # Extract compiler flags from first line comment if present
+    lines = code.split('\n')
+    compiler_flags = []
+    if lines and lines[0].startswith('//'):
+        compiler_flags = lines[0].lstrip('/ ').split()
+    
+    # Create temp files
+    with tempfile.NamedTemporaryFile(suffix='.c', mode='w', delete=False) as f:
+        f.write(code)
+        c_file = f.name
+    
+    try:
+        # Compile with optimization flags from comment
+        executable = c_file + '.out'
+        object_file = c_file + '.o'
+        
+        # Compile to object file
+        compile_cmd = ['gcc', '-c', c_file, '-o', object_file] + compiler_flags
+        compile_result = await run_process(compile_cmd)
+        
+        if compile_result.return_code != 0:
+            return compile_result
+        
+        # Get assembly output
+        objdump_result = await run_process(['objdump', '-d', object_file])
+        if objdump_result.return_code != 0:
+            return objdump_result
+        
+        # Compile for execution
+        compile_exec_cmd = ['gcc', c_file, '-o', executable] + compiler_flags
+        compile_exec_result = await run_process(compile_exec_cmd)
+        
+        if compile_exec_result.return_code != 0:
+            return compile_exec_result
+        
+        # Run the program
+        run_result = await run_process([executable])
+        
+        # Combine assembly and program output
+        combined_output = (
+            f"{objdump_result.stdout}\n"
+            f"{'=' * 80}\n"
+            f"{run_result.stdout}"
+        )
+        
+        combined_errors = (
+            f"{compile_result.stderr}\n"
+            f"{run_result.stderr}"
+        ).strip()
+        
+        return CodeResult(
+            stdout=combined_output,
+            stderr=combined_errors,
+            return_code=run_result.return_code
+        )
+    
+    finally:
+        # Cleanup
+        try:
+            os.unlink(c_file)
+            os.unlink(object_file)
+            os.unlink(executable)
+        except:
+            pass
+
 async def run_cpp(code: str) -> CodeResult:
-    # For C++, we still need to compile, so we'll use a temp file
+    # For C++, we need to compile, so we'll use a temp file
     with tempfile.NamedTemporaryFile(suffix='.cpp', mode='w', delete=False) as f:
         f.write(code)
         cpp_file = f.name
@@ -120,5 +212,7 @@ LANGUAGE_RUNNERS = {
     'python': run_python,
     'javascript': run_javascript,
     'java': run_java,
-    'cpp': run_cpp
+    'cpp': run_cpp,
+    'c': run_c,
+    'c_to_asm': run_c_to_asm
 }
