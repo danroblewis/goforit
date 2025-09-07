@@ -1,13 +1,25 @@
 import tempfile
 import os
+import re
 import time
 import asyncio
 from .base import CodeResult, CodeOutput, run_process
 from .utils import detect_system_arch, format_hexdump
 
+def parse_build_flags(code: str) -> list[str]:
+    """Extract build flags from first line comment."""
+    flags_match = re.match(r'//\s*flags:\s*(.*)', code)
+    if not flags_match:
+        # Default optimization flags for smaller binaries and faster builds
+        return ['-ldflags=-s -w']  # Strip debug info and DWARF tables
+    return flags_match.group(1).split()
+
 async def run_go(code: str) -> CodeResult:
     start_time = time.time()
     with tempfile.TemporaryDirectory() as tmpdir:
+        # Parse build flags
+        build_flags = parse_build_flags(code)
+        
         # Write the code
         main_go = os.path.join(tmpdir, 'main.go')
         with open(main_go, 'w') as f:
@@ -19,7 +31,11 @@ async def run_go(code: str) -> CodeResult:
         # Build the program with -mod=mod to avoid needing go.mod
         build_start = time.time()
         executable = os.path.join(tmpdir, 'main')
-        build_result = await run_process(['go', 'build', '-mod=mod', '-o', executable, main_go])
+        build_cmd = ['go', 'build', '-mod=mod', '-o', executable]
+        build_cmd.extend(build_flags)
+        build_cmd.append(main_go)
+        
+        build_result = await run_process(build_cmd)
         if build_result.return_code != 0:
             print(f"Write time: {write_time:.3f}s")
             print(f"Build time: {time.time() - build_start:.3f}s")
@@ -70,7 +86,7 @@ async def run_go(code: str) -> CodeResult:
         # Add objdump and hexdump outputs
         run_result.code_outputs = [
             CodeOutput(content=objdump_result.stdout, language=f"asm-{arch}"),
-            CodeOutput(content=hexdump_output, language="hexdump")  # hexdump_output is now awaited
+            CodeOutput(content=hexdump_output, language="hexdump")
         ]
 
         # Print timing info

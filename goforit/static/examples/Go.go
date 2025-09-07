@@ -1,3 +1,5 @@
+// flags: -ldflags="-s -w" -trimpath
+
 package main
 
 import "fmt"
