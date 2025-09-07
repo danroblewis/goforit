@@ -13,7 +13,9 @@ export class App {
             'java': '/static/examples/Example.java',
             'cpp': '/static/examples/CPP.cpp',
             'c': '/static/examples/C.c',
-            'assembly': '/static/examples/Assembly.asm',
+            'assembly_x86': '/static/examples/assembly_x86.asm',
+            'assembly_x86_64': '/static/examples/assembly_x86_64.asm',
+            'assembly_arm64': '/static/examples/assembly_arm64.asm',
             'rust': '/static/examples/Rust.rs',
             'go': '/static/examples/Go.go'
         };
@@ -41,6 +43,9 @@ export class App {
             case 'c':
                 return 'c';
             case 'assembly':
+            case 'assembly_x86':
+            case 'assembly_x86_64':
+            case 'assembly_arm64':
                 return 'asm';
             default:
                 return selectedLanguage;
@@ -55,7 +60,9 @@ export class App {
             const response = await fetch(url);
             const code = await response.text();
             this.editor.setValue(code);
-            document.getElementById('language').value = language;
+            // For assembly examples, always set the language selector to 'assembly'
+            const displayLanguage = language.startsWith('assembly_') ? 'assembly' : language;
+            document.getElementById('language').value = displayLanguage;
             this.monaco.editor.setModelLanguage(this.editor.getModel(), this.getEditorLanguage(language));
             this.handleEditorChange();
         } catch (error) {
@@ -71,7 +78,16 @@ export class App {
         Object.entries(this.examples).forEach(([language, _]) => {
             const item = document.createElement('div');
             item.className = 'example-item';
-            item.textContent = language.charAt(0).toUpperCase() + language.slice(1).replace(/_/g, ' ');
+            // Format the display name
+            let displayName = language
+                .split('_')
+                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(' ');
+            // Special case for assembly examples
+            if (language.startsWith('assembly_')) {
+                displayName = `Assembly (${language.split('_')[1].toUpperCase()})`;
+            }
+            item.textContent = displayName;
             item.addEventListener('click', () => {
                 this.loadExample(language);
                 menu.classList.remove('visible');
