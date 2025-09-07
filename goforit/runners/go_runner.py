@@ -20,12 +20,24 @@ async def run_go(code: str) -> CodeResult:
         # Parse build flags
         build_flags = parse_build_flags(code)
         
-        # Write the code
+        # Write the code, ensuring package main is first
         main_go = os.path.join(tmpdir, 'main.go')
+        code_lines = code.strip().split('\n')
+        
+        # Remove any existing package declaration
+        code_lines = [line for line in code_lines if not line.strip().startswith('package ')]
+        
+        # Add package main as first line (after any comments)
+        for i, line in enumerate(code_lines):
+            if not line.strip().startswith('//'):
+                code_lines.insert(i, 'package main')
+                break
+        else:
+            # If we're here, the file was all comments
+            code_lines.append('package main')
+        
         with open(main_go, 'w') as f:
-            if not code.strip().startswith('package main'):
-                code = 'package main\n\n' + code
-            f.write(code)
+            f.write('\n'.join(code_lines))
         write_time = time.time() - start_time
 
         # Build the program with -mod=mod to avoid needing go.mod
