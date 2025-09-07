@@ -21,26 +21,60 @@ export class App {
 
                     // Common instructions and registers
                     const instructions = [
-                        'mov', 'push', 'pop', 'lea', 'call', 'ret',
-                        'add', 'sub', 'mul', 'div', 'inc', 'dec',
-                        'and', 'or', 'xor', 'not', 'neg', 'shl', 'shr',
-                        'jmp', 'je', 'jne', 'jg', 'jge', 'jl', 'jle',
-                        'cmp', 'test',
-                        'syscall', 'int'
+                        // Data movement
+                        'mov', 'push', 'pop', 'lea', 'xchg', 'cmov[a-z]+',
+                        // Stack
+                        'pushf[d|q]?', 'popf[d|q]?', 'enter', 'leave',
+                        // Arithmetic
+                        'add', 'sub', 'mul', 'div', 'imul', 'idiv', 'inc', 'dec',
+                        'neg', 'adc', 'sbb', 'cmp',
+                        // Logical
+                        'and', 'or', 'xor', 'not', 'test',
+                        // Shifts and rotates
+                        'sh[lr][d|q|w|b]?', 'sa[lr][d|q|w|b]?', 'ro[lr][d|q|w|b]?', 'rc[lr][d|q|w|b]?',
+                        // Bit manipulation
+                        'bt[s|r|c]?', 'bs[f|r]',
+                        // Control flow
+                        'jmp', 'j[a-z]+', 'call', 'ret', 'loop[a-z]*',
+                        // System
+                        'syscall', 'sysenter', 'sysexit', 'sysret', 'int',
+                        'cli', 'sti', 'hlt', 'nop', 'ud2',
+                        // x87 FPU
+                        'f[a-z]+',
+                        // SSE/AVX
+                        '[v]?(add|sub|mul|div|min|max)[ps][ds]',
+                        '[v]?mov[au]?ps',
+                        '[v]?unpck[hl]ps',
+                        // ARM64
+                        'ldr', 'str', 'stp', 'ldp',
+                        'add', 'sub', 'mul', 'udiv', 'sdiv',
+                        'and', 'orr', 'eor', 'ands',
+                        'cmp', 'tst',
+                        'b', 'b\\.[a-z]+', 'bl', 'ret', 'br', 'blr',
+                        'svc', 'msr', 'mrs',
+                        'mov[k|n|z]?',
+                        'lsl', 'lsr', 'asr', 'ror'
                     ];
 
                     const registers = [
-                        // x86_64
-                        'rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rbp', 'rsp',
-                        'r8', 'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15',
-                        // x86
-                        'eax', 'ebx', 'ecx', 'edx', 'esi', 'edi', 'ebp', 'esp',
-                        // ARM64
-                        'x0', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7',
-                        'x8', 'x9', 'x10', 'x11', 'x12', 'x13', 'x14', 'x15',
-                        'x16', 'x17', 'x18', 'x19', 'x20', 'x21', 'x22', 'x23',
-                        'x24', 'x25', 'x26', 'x27', 'x28', 'x29', 'x30',
-                        'sp', 'pc', 'xzr'
+                        // x86_64 general purpose
+                        '[re]?[abcd]x', '[re]?[sb]p', '[re]?[sd]i', 'r[0-9]+[dwb]?',
+                        // x86_64 segments
+                        '[c-g]s', 'fs', 'ss',
+                        // x86_64 control
+                        'cr[0-4]', 'dr[0-7]',
+                        // x86_64 MMX
+                        'mm[0-7]',
+                        // x86_64 SSE/AVX
+                        'xmm[0-9]+', 'ymm[0-9]+', 'zmm[0-9]+',
+                        // ARM64 general purpose
+                        '[xw][0-9]+',
+                        // ARM64 special
+                        'sp', 'pc', 'xzr', 'wzr',
+                        // ARM64 SIMD
+                        '[vq][0-9]+',
+                        // ARM64 system
+                        'fpsr', 'fpcr', 'cpsr', 'spsr'
                     ];
 
                     monaco.languages.setMonarchTokensProvider('asm', {
@@ -57,9 +91,21 @@ export class App {
 
                         // Assembly keywords
                         keywords: [
-                            'section', 'global', 'extern', 'align',
-                            'db', 'dw', 'dd', 'dq', 'times', 'equ',
-                            'byte', 'word', 'dword', 'qword'
+                            // Sections and scope
+                            'section', 'segment', 'global', 'extern', 'local',
+                            'align', 'default', 'rel', 'abs',
+                            // Data definition
+                            'db', 'dw', 'dd', 'dq', 'dt', 'do', 'dy',
+                            'resb', 'resw', 'resd', 'resq', 'rest', 'reso', 'resy',
+                            'times', 'equ', 'byte', 'word', 'dword', 'qword',
+                            // Macros and conditionals
+                            'macro', 'endm', 'istruc', 'at', 'iend',
+                            'if', 'else', 'endif', 'ifdef', 'ifndef',
+                            // ARM64 directives
+                            '.text', '.data', '.bss', '.rodata',
+                            '.global', '.local', '.comm', '.ascii', '.asciz',
+                            '.byte', '.short', '.long', '.quad', '.float', '.double',
+                            '.align', '.balign', '.p2align'
                         ],
 
                         instructions,
@@ -74,32 +120,37 @@ export class App {
                                 // Comments
                                 [/;.*$/, 'comment'],
                                 [/\/\/.*$/, 'comment'],
+                                [/\/\*/, 'comment', '@comment'],
 
                                 // Numbers
                                 [/\b\d*\.\d+([eE][-+]?\d+)?\b/, 'number.float'],
                                 [/\b0x[0-9a-fA-F]+\b/, 'number.hex'],
-                                [/\b\d+\b/, 'number'],
+                                [/\b[0-9]+\b/, 'number'],
+                                [/\b0b[01]+\b/, 'number.binary'],
 
                                 // String literals
                                 [/'([^'\\]|\\.)*$/, 'string.invalid'],
                                 [/'/, 'string', '@string'],
+                                [/"([^"\\]|\\.)*$/, 'string.invalid'],
+                                [/"/, 'string', '@string_double'],
 
                                 // Keywords
-                                [/\b(section|global|extern|align)\b/, 'keyword'],
-                                [/\b(db|dw|dd|dq|times|equ)\b/, 'keyword'],
-                                [/\b(byte|word|dword|qword)\b/, 'keyword'],
+                                [/\.[a-zA-Z]\w*\b/, 'keyword'],
+                                [/\b(section|segment|global|extern|align|default|rel|abs)\b/, 'keyword'],
+                                [/\b(db|dw|dd|dq|dt|do|dy|resb|resw|resd|resq|rest|reso|resy|times|equ)\b/, 'keyword'],
+                                [/\b(byte|word|dword|qword|ptr)\b/, 'keyword'],
 
-                                // Instructions
-                                [new RegExp(`\\b(${instructions.join('|')})\\b`), 'keyword.instruction'],
+                                // Instructions (using regex patterns)
+                                [new RegExp(`\\b(${instructions.join('|')})\\b`, 'i'), 'keyword.instruction'],
 
-                                // Registers
-                                [new RegExp(`\\b(${registers.join('|')})\\b`), 'variable.predefined'],
+                                // Registers (using regex patterns)
+                                [new RegExp(`\\b(${registers.join('|')})\\b`, 'i'), 'variable.predefined'],
 
                                 // Operators
                                 [/[+\-*/=<>|&^~!]+/, 'operator'],
 
                                 // Identifiers
-                                [/[a-zA-Z_]\w*/, {
+                                [/[a-zA-Z_$][\w$]*/, {
                                     cases: {
                                         '@keywords': 'keyword',
                                         '@instructions': 'keyword.instruction',
@@ -109,10 +160,23 @@ export class App {
                                 }]
                             ],
 
+                            comment: [
+                                [/[^/*]+/, 'comment'],
+                                [/\/\*/, 'comment', '@push'],
+                                [/\*\//, 'comment', '@pop'],
+                                [/[/*]/, 'comment']
+                            ],
+
                             string: [
                                 [/[^\\']+/, 'string'],
-                                [/\\./, 'string.escape.invalid'],
+                                [/\\./, 'string.escape'],
                                 [/'/, 'string', '@pop']
+                            ],
+
+                            string_double: [
+                                [/[^\\"]+/, 'string'],
+                                [/\\./, 'string.escape'],
+                                [/"/, 'string', '@pop']
                             ]
                         }
                     });
