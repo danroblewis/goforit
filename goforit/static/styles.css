@@ -61,6 +61,10 @@ body {
     overflow-x: auto;
 }
 
+.code-output-block pre {
+    text-wrap: wrap;
+}
+
 .output-label {
     color: #4caf50;
     margin-bottom: 10px;
