@@ -1,7 +1,7 @@
 // arch: x86_64 syntax: intel
 section .data
-    msg db 'Hello, World!', 0xa  ; String with newline
-    len equ $ - msg              ; Length of string
+    msg db 'Hello from Assembly!', 0xa  ; String with newline
+    len equ $ - msg                     ; Length of string
 
 section .text
     global _start
