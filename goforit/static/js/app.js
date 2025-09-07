@@ -45,15 +45,29 @@ export class App {
                         '[v]?(add|sub|mul|div|min|max)[ps][ds]',
                         '[v]?mov[au]?ps',
                         '[v]?unpck[hl]ps',
-                        // ARM64
-                        'ldr', 'str', 'stp', 'ldp',
-                        'add', 'sub', 'mul', 'udiv', 'sdiv',
-                        'and', 'orr', 'eor', 'ands',
-                        'cmp', 'tst',
-                        'b', 'b\\.[a-z]+', 'bl', 'ret', 'br', 'blr',
-                        'svc', 'msr', 'mrs',
-                        'mov[k|n|z]?',
-                        'lsl', 'lsr', 'asr', 'ror'
+                        // ARM64 memory
+                        'ldr[b|h|w|x]?', 'str[b|h|w|x]?', 'stp', 'ldp',
+                        // ARM64 address calculation
+                        'adr', 'adrp',
+                        // ARM64 arithmetic
+                        'add', 'sub', 'mul', 'udiv', 'sdiv', 'madd', 'msub',
+                        'mneg', 'smulh', 'umulh', 'sdiv', 'udiv',
+                        // ARM64 logical
+                        'and', 'orr', 'eor', 'ands', 'bic', 'bics', 'eon',
+                        // ARM64 comparison
+                        'cmp', 'tst', 'ccmp', 'ccmn',
+                        // ARM64 branches
+                        'b', 'b\\.[a-z]+', 'bl', 'ret', 'br', 'blr', 'cbz', 'cbnz',
+                        'tbz', 'tbnz',
+                        // ARM64 system
+                        'svc', 'msr', 'mrs', 'sys', 'sysl', 'ic', 'dc', 'isb',
+                        'dmb', 'dsb',
+                        // ARM64 data movement
+                        'mov[k|n|z]?', 'mvn',
+                        // ARM64 shifts
+                        'lsl', 'lsr', 'asr', 'ror', 'asrv', 'lslv', 'lsrv', 'rorv',
+                        // ARM64 bit manipulation
+                        'cls', 'clz', 'rbit', 'rev', 'rev16', 'rev32', 'rev64'
                     ];
 
                     const registers = [
@@ -70,11 +84,14 @@ export class App {
                         // ARM64 general purpose
                         '[xw][0-9]+',
                         // ARM64 special
-                        'sp', 'pc', 'xzr', 'wzr',
-                        // ARM64 SIMD
-                        '[vq][0-9]+',
+                        'sp', 'pc', 'xzr', 'wzr', 'lr',
+                        // ARM64 SIMD/FP
+                        '[vq][0-9]+', '[bhsdq][0-9]+',
                         // ARM64 system
-                        'fpsr', 'fpcr', 'cpsr', 'spsr'
+                        'fpsr', 'fpcr', 'cpsr', 'spsr', 'nzcv', 'daif',
+                        // ARM64 barriers
+                        'sy', 'oshld', 'oshst', 'osh', 'nshld', 'nshst',
+                        'nsh', 'ishld', 'ishst', 'ish', 'ld', 'st'
                     ];
 
                     monaco.languages.setMonarchTokensProvider('asm', {
@@ -105,7 +122,11 @@ export class App {
                             '.text', '.data', '.bss', '.rodata',
                             '.global', '.local', '.comm', '.ascii', '.asciz',
                             '.byte', '.short', '.long', '.quad', '.float', '.double',
-                            '.align', '.balign', '.p2align'
+                            '.align', '.balign', '.p2align',
+                            // ARM64 operators
+                            'lsl', 'lsr', 'asr', 'ror',
+                            // ARM64 addressing
+                            '@PAGE', '@PAGEOFF'
                         ],
 
                         instructions,
@@ -127,6 +148,7 @@ export class App {
                                 [/\b0x[0-9a-fA-F]+\b/, 'number.hex'],
                                 [/\b[0-9]+\b/, 'number'],
                                 [/\b0b[01]+\b/, 'number.binary'],
+                                [/#-?\d+/, 'number'],  // ARM64 immediate values
 
                                 // String literals
                                 [/'([^'\\]|\\.)*$/, 'string.invalid'],
@@ -148,6 +170,7 @@ export class App {
 
                                 // Operators
                                 [/[+\-*/=<>|&^~!]+/, 'operator'],
+                                [/@(PAGE|PAGEOFF)/, 'operator'],  // ARM64 relocation operators
 
                                 // Identifiers
                                 [/[a-zA-Z_$][\w$]*/, {
