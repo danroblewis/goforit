@@ -26,9 +26,15 @@ export class App {
     async initEditor() {
         await this.loadMonaco();
 
+        // Load last code first to get the correct initial language
+        const data = await this.evaluator.loadLastCode();
+        const initialLanguage = data?.language || 'python';
+        const editorLang = initialLanguage === 'c_to_asm' ? 'c' : initialLanguage;
+
+        // Create editor with correct initial language
         this.editor = this.monaco.editor.create(document.getElementById('editor'), {
             value: '',
-            language: 'python',
+            language: editorLang,
             theme: 'vs-dark',
             minimap: { enabled: false },
             fontSize: 14,
@@ -48,7 +54,12 @@ export class App {
         this.monaco.editor.setTheme('custom-vs-dark');
 
         this.setupEventListeners();
-        await this.loadLastCode();
+
+        // Set the language dropdown and code after editor is created
+        if (data?.code) {
+            document.getElementById('language').value = data.language;
+            this.editor.setValue(data.code);
+        }
     }
 
     setupEventListeners() {
@@ -76,19 +87,6 @@ export class App {
         const editorLang = newLanguage === 'c_to_asm' ? 'c' : newLanguage;
         this.monaco.editor.setModelLanguage(this.editor.getModel(), editorLang);
         this.handleEditorChange();
-    }
-
-    async loadLastCode() {
-        const data = await this.evaluator.loadLastCode();
-        if (data?.code) {
-            // First set the language
-            document.getElementById('language').value = data.language;
-            const editorLang = data.language === 'c_to_asm' ? 'c' : data.language;
-            this.monaco.editor.setModelLanguage(this.editor.getModel(), editorLang);
-            
-            // Then set the code value (this will trigger evaluation)
-            this.editor.setValue(data.code);
-        }
     }
 
     updateUI(result) {
