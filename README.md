@@ -15,6 +15,23 @@ This will:
 2. Start the server on a free port
 3. Open your browser automatically
 
+### Configuration
+
+You can configure the server using command-line arguments or environment variables:
+
+```bash
+# Using command-line arguments
+goforit -p 8000 --host 0.0.0.0
+
+# Using environment variables
+PORT=8000 HOST=0.0.0.0 goforit
+```
+
+Options:
+- `-p, --port`: Port to run the server on (default: random free port)
+- `--host`: Host to run the server on (default: 127.0.0.1)
+- Environment variables: `PORT` and `HOST`
+
 ## Features
 
 - **Real-time Code Evaluation**: Code is evaluated as you type
