@@ -55,8 +55,10 @@ function createCollapsibleSection(title, content, language) {
 }
 
 export function renderOutput(outputDiv, result) {
-    const start = performance.now();
-    outputDiv.innerHTML = '';
+    const domStart = performance.now();
+
+    // Create a document fragment to build the DOM off-screen
+    const fragment = document.createDocumentFragment();
 
     // Display code outputs first (assembly, objdump, hexdump)
     if (result.code_outputs && result.code_outputs.length > 0) {
@@ -73,7 +75,7 @@ export function renderOutput(outputDiv, result) {
             }
 
             const section = createCollapsibleSection(title, output.content, output.language);
-            outputDiv.appendChild(section);
+            fragment.appendChild(section);
         });
     }
 
@@ -83,17 +85,31 @@ export function renderOutput(outputDiv, result) {
             const stdoutDiv = document.createElement('div');
             stdoutDiv.className = 'program-output';
             stdoutDiv.innerHTML = `<div class="output-label">Program Output</div><pre>${escapeHtml(result.stdout)}</pre>`;
-            outputDiv.appendChild(stdoutDiv);
+            fragment.appendChild(stdoutDiv);
         }
 
         if (result.stderr) {
             const stderrDiv = document.createElement('div');
             stderrDiv.className = 'program-output';
             stderrDiv.innerHTML = `<div class="error-label">Program Errors</div><pre>${escapeHtml(result.stderr)}</pre>`;
-            outputDiv.appendChild(stderrDiv);
+            fragment.appendChild(stderrDiv);
         }
     }
-    console.log(`Render time: ${(performance.now() - start).toFixed(1)}ms`);
+
+    const domTime = performance.now() - domStart;
+    console.log(`DOM creation time: ${domTime.toFixed(1)}ms`);
+
+    // Clear the output div and add the new content
+    // Use requestAnimationFrame to measure actual render time
+    requestAnimationFrame(() => {
+        const renderStart = performance.now();
+        outputDiv.innerHTML = '';
+        outputDiv.appendChild(fragment);
+        requestAnimationFrame(() => {
+            const renderTime = performance.now() - renderStart;
+            console.log(`Actual render time: ${renderTime.toFixed(1)}ms`);
+        });
+    });
 }
 
 export function updateBackgroundColor(result) {
