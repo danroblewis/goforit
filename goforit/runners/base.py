@@ -15,14 +15,15 @@ class CodeResult:
         self.return_code = return_code
         self.code_outputs = code_outputs or []
 
-async def run_process(cmd: list[str], input_text: Optional[str] = None, timeout: int = 2) -> CodeResult:
+async def run_process(cmd: list[str], input_text: Optional[str] = None, timeout: int = 2, cwd: Optional[str] = None) -> CodeResult:
     try:
         process = await asyncio.create_subprocess_exec(
             *cmd,
             stdin=asyncio.subprocess.PIPE if input_text else None,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            preexec_fn=os.setsid
+            preexec_fn=os.setsid,
+            cwd=cwd
         )
         
         try:
