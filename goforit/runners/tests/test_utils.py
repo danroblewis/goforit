@@ -26,6 +26,17 @@ def test_format_hexdump():
     assert lines[0].startswith('00000000')
     assert lines[1].startswith('00000010')  # Second line starts at offset 16
 
+    # Test zero line skipping
+    data = b"A" * 16 + b"\0" * 32 + b"B" * 16
+    hexdump = format_hexdump(data)
+    lines = [l for l in hexdump.split('\n') if l]
+    assert len(lines) == 3  # Should be: first line, *, last line
+    assert lines[0].startswith('00000000')  # First line with A's
+    assert lines[1] == '*'  # Zero lines replaced with *
+    assert lines[2].startswith('00000030')  # Last line with B's
+    assert '41 41 41 41' in lines[0]  # Hex for "AAAA"
+    assert '42 42 42 42' in lines[2]  # Hex for "BBBB"
+
 def test_detect_system_arch():
     arch = detect_system_arch()
     # Should return one of the known architectures

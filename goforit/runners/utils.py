@@ -13,32 +13,42 @@ def detect_system_arch():
         return 'unknown'
 
 def format_hexdump(data: bytes, width: int = 16) -> str:
-    """Format binary data as a hexdump with address, hex values, and ASCII representation."""
+    """Format binary data as a hexdump with address, hex values, and ASCII representation.
+    Skips lines that contain only zeros."""
     result = []
+    last_line_was_zeros = False
+
     for i in range(0, len(data), width):
         chunk = data[i:i + width]
-        # Address
+        
+        # Check if this line is all zeros
+        if all(byte == 0 for byte in chunk):
+            if not last_line_was_zeros:  # Only add the * line once
+                result.append("*\n")
+                last_line_was_zeros = True
+            continue
+        last_line_was_zeros = False
+        
+        # Add address
         result.append(f"{i:08x}  ")
         
-        # Hex values
         hex_values = []
         ascii_values = []
         
+        # Process each byte
         for j, byte in enumerate(chunk):
             hex_values.append(f"{byte:02x}")
-            # Add extra space every 8 bytes
             if j % 8 == 7:
                 hex_values.append(" ")
-            # Printable ASCII or dot
             ascii_values.append(chr(byte) if 32 <= byte <= 126 else ".")
         
-        # Pad hex values if not a full line
+        # Pad hex values if needed
         while len(hex_values) < width + (width // 8):
             hex_values.append("  ")
-            if len(hex_values) % 9 == 8:  # Account for the extra spaces
+            if len(hex_values) % 9 == 8:
                 hex_values.append(" ")
         
-        # Combine parts
+        # Join everything together
         result.append(" ".join(hex_values))
         result.append(" |")
         result.append("".join(ascii_values))
