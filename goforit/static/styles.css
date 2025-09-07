@@ -3,7 +3,7 @@
     height: 100vh;
     margin: 0;
     padding: 0;
-    background-color: #333;
+    background-color: transparent;
 }
 
 .editor-container {
@@ -11,15 +11,19 @@
     min-width: 200px;
     display: flex;
     flex-direction: column;
+    position: relative; /* For absolute positioning of language selector */
 }
 
 .language-selector {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
     padding: 5px;
-    margin: 5px;
-    background-color: #444;
+    background-color: rgba(68, 68, 68, 0.7);
     color: #fff;
-    border: 1px solid #666;
+    border: 1px solid rgba(102, 102, 102, 0.7);
     border-radius: 4px;
+    z-index: 10;
 }
 
 #editor {
@@ -48,8 +52,18 @@
 
 .output-separator {
     border: none;
-    border-top: 1px solid #666;
+    border-top: 1px solid rgba(102, 102, 102, 0.7);
     margin: 10px 0;
+}
+
+.program-output {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    white-space: pre;
+    word-break: keep-all;
+    overflow-x: auto;
 }
 
 .output-label {

@@ -93,31 +93,27 @@ export function renderOutput(outputDiv, result) {
         });
     }
 
-    // Then display stdout/stderr
+    // Then display stdout/stderr as regular sections
     if (result.stdout || result.stderr) {
         if (result.code_outputs && result.code_outputs.length > 0) {
             outputDiv.appendChild(document.createElement('hr'));
         }
 
         if (result.stdout) {
-            const section = createCollapsibleSection(
-                'Program Output',
-                result.stdout,
-                null
-            );
-            outputDiv.appendChild(section);
+            const stdoutDiv = document.createElement('div');
+            stdoutDiv.className = 'program-output';
+            stdoutDiv.innerHTML = `<div class="output-label">Program Output</div><pre>${escapeHtml(result.stdout)}</pre>`;
+            outputDiv.appendChild(stdoutDiv);
         }
 
         if (result.stderr) {
             if (result.stdout) {
                 outputDiv.appendChild(document.createElement('hr'));
             }
-            const section = createCollapsibleSection(
-                'Program Errors',
-                result.stderr,
-                null
-            );
-            outputDiv.appendChild(section);
+            const stderrDiv = document.createElement('div');
+            stderrDiv.className = 'program-output';
+            stderrDiv.innerHTML = `<div class="error-label">Program Errors</div><pre>${escapeHtml(result.stderr)}</pre>`;
+            outputDiv.appendChild(stderrDiv);
         }
     }
 }
