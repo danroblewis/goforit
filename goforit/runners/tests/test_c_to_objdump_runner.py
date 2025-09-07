@@ -59,9 +59,5 @@ def test_hexdump_format(run_async):
     result = run_async(run_c_to_objdump(code))
     hexdump = result.code_outputs[1].content
     # Check for either objdump format or our custom format
-    assert any(
-        # objdump format
-        'Contents of section' in hexdump or
-        # Our custom format
-        any(line.strip() and '|' in line for line in hexdump.split('\n'))
-    )
+    assert ('Contents of section' in hexdump or
+           any(line.strip() and '|' in line for line in hexdump.split('\n')))
