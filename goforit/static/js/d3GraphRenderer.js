@@ -67,21 +67,25 @@ class D3GraphRenderer {
                 });
             }
 
-            // Process edges
+            // Create node objects first
+            const nodeObjects = Array.from(nodes).map(id => ({ id }));
+            const nodeMap = new Map(nodeObjects.map(node => [node.id, node]));
+
+            // Process edges using node objects
             if (graphData.edges) {
                 graphData.edges.forEach(edge => {
                     if (edge.tail && edge.head) {
-                        const source = edge.tail;
-                        const target = edge.head;
-                        nodes.add(source);
-                        nodes.add(target);
-                        links.push({ source, target });
+                        const source = nodeMap.get(edge.tail);
+                        const target = nodeMap.get(edge.head);
+                        if (source && target) {
+                            links.push({ source, target });
+                        }
                     }
                 });
             }
 
             return {
-                nodes: Array.from(nodes).map(id => ({ id })),
+                nodes: nodeObjects,
                 links
             };
         } catch (error) {
