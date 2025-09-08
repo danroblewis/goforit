@@ -1,5 +1,6 @@
 import { CodeEvaluator, updateBackgroundColor, renderOutput, clearCollapsedState } from './codeEvaluator.js';
 import { registerAssemblyLanguage } from './assemblyLanguage.js';
+import { registerHaskellLanguage } from './haskellLanguage.js';
 
 export class App {
     constructor() {
@@ -17,7 +18,8 @@ export class App {
             'assembly_x86_64': '/static/examples/assembly_x86_64.asm',
             'assembly_arm64': '/static/examples/assembly_arm64.asm',
             'rust': '/static/examples/Rust.rs',
-            'go': '/static/examples/Go.go'
+            'go': '/static/examples/Go.go',
+            'haskell': '/static/examples/Haskell.hs'
         };
     }
 
@@ -26,10 +28,15 @@ export class App {
             const script = document.createElement('script');
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.js';
             script.onload = () => {
-                require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
+                require.config({ 
+                    paths: { 
+                        vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs',
+                    }
+                });
                 require(['vs/editor/editor.main'], (monaco) => {
                     this.monaco = monaco;
                     registerAssemblyLanguage(monaco);
+                    registerHaskellLanguage(monaco);
                     resolve();
                 });
             };
@@ -47,6 +54,8 @@ export class App {
             case 'assembly_x86_64':
             case 'assembly_arm64':
                 return 'asm';
+            case 'haskell':
+                return 'haskell';
             default:
                 return selectedLanguage;
         }
