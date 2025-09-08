@@ -7,12 +7,33 @@ def find_graphviz_blocks(text: str) -> List[str]:
     Looks for both 'graph {...}' and 'digraph {...}' patterns.
     Handles nested braces correctly."""
     
-    # Pattern matches 'graph [name] {' or 'digraph [name] {' followed by any content until matching '}'
-    pattern = r'(?:^|\n)\s*((?:di)?graph\s+[a-zA-Z0-9_]*\s*{[^}]*})'
+    blocks = []
+    # Look for graph or digraph declarations
+    pattern = r'(?:^|\n)\s*((?:di)?graph\s+[a-zA-Z0-9_]*\s*{)'
     
-    # Find all non-overlapping matches
-    matches = re.finditer(pattern, text, re.MULTILINE | re.DOTALL)
-    blocks = [match.group(1).strip() for match in matches]
+    for match in re.finditer(pattern, text, re.MULTILINE):
+        start_pos = match.start(1)
+        current_pos = match.end(1)
+        brace_count = 1  # We've found the first opening brace
+        
+        # Keep track of the full block including the declaration
+        block = match.group(1)
+        
+        # Find the matching closing brace, accounting for nesting
+        while brace_count > 0 and current_pos < len(text):
+            char = text[current_pos]
+            if char == '{':
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+            block += char
+            current_pos += 1
+            
+            # Break if we've found the matching closing brace
+            if brace_count == 0:
+                blocks.append(block.strip())
+                break
+    
     print(f"Found Graphviz blocks: {blocks}")  # Debug logging
     return blocks
 
