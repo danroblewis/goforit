@@ -49,6 +49,22 @@
 .arm-b:hover::after { content: "B: Branch to target address"; }
 .arm-bl:hover::after { content: "BL: Branch with link (call subroutine)"; }
 .arm-ret:hover::after { content: "RET: Return from subroutine"; }
+
+/* Conditional Branches */
+.arm-b_eq:hover::after { content: "B.EQ: Branch if Equal (Z=1)"; }
+.arm-b_ne:hover::after { content: "B.NE: Branch if Not Equal (Z=0)"; }
+.arm-b_cs:hover::after { content: "B.CS: Branch if Carry Set (C=1)"; }
+.arm-b_cc:hover::after { content: "B.CC: Branch if Carry Clear (C=0)"; }
+.arm-b_mi:hover::after { content: "B.MI: Branch if Minus/Negative (N=1)"; }
+.arm-b_pl:hover::after { content: "B.PL: Branch if Plus/Positive (N=0)"; }
+.arm-b_vs:hover::after { content: "B.VS: Branch if Overflow Set (V=1)"; }
+.arm-b_vc:hover::after { content: "B.VC: Branch if Overflow Clear (V=0)"; }
+.arm-b_hi:hover::after { content: "B.HI: Branch if Higher (C=1 & Z=0)"; }
+.arm-b_ls:hover::after { content: "B.LS: Branch if Lower or Same (C=0 | Z=1)"; }
+.arm-b_ge:hover::after { content: "B.GE: Branch if Greater or Equal (N=V)"; }
+.arm-b_lt:hover::after { content: "B.LT: Branch if Less Than (N!=V)"; }
+.arm-b_gt:hover::after { content: "B.GT: Branch if Greater Than (Z=0 & N=V)"; }
+.arm-b_le:hover::after { content: "B.LE: Branch if Less or Equal (Z=1 | N!=V)"; }
 .arm-svc:hover::after { content: "SVC: Supervisor call"; }
 .arm-nop:hover::after { content: "NOP: No operation"; }
 .arm-adrp:hover::after { content: "ADRP: Form PC-relative address to 4KB page"; }

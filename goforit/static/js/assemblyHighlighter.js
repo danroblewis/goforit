@@ -3,10 +3,10 @@ function escapeHtml(unsafe) {
 }
 
 function highlightInstruction(instrPart) {
-    // Highlight the mnemonic (first word)
-    const mnemonicMatch = instrPart.match(/^\s*(\w+)/);
+    // Highlight the mnemonic (first word, including conditional suffixes)
+    const mnemonicMatch = instrPart.match(/^\s*(\w+\.?\w*)/);
     if (mnemonicMatch) {
-        const mnemonic = mnemonicMatch[1].toLowerCase();
+        const mnemonic = mnemonicMatch[1].toLowerCase().replace('.', '_');
         instrPart = instrPart.replace(mnemonicMatch[1], `<span class="asm-mnemonic arm-${mnemonic} asm-tooltip">${mnemonicMatch[1]}</span>`);
     }
     
