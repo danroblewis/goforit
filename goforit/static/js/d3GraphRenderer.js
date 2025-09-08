@@ -102,9 +102,9 @@ function createGraph(container, data, width, height) {
         .force('charge', d3.forceManyBody()
             .strength(-200))
         // Stronger centering forces
-        .force('center', d3.forceCenter(width / 2, height / 2).strength(1))
-        .force('x', d3.forceX(width / 2).strength(0.3))
-        .force('y', d3.forceY(height / 2).strength(0.3));
+        .force('center', d3.forceCenter(width / 4, height / 2).strength(1))
+        .force('x', d3.forceX(width / 4).strength(0.3))
+        .force('y', d3.forceY(height / 4).strength(0.3));
 
     // Add drag behavior
     nodes.call(d3.drag()
@@ -172,7 +172,7 @@ export async function renderD3Graph(dotSource) {
         document.body.removeChild(measureDiv);
 
         // Create the graph with measured dimensions
-        const simulation = createGraph(container, data, width/2, height);
+        const simulation = createGraph(container, data, width, height);
 
         // Store simulation for cleanup
         container._simulation = simulation;
