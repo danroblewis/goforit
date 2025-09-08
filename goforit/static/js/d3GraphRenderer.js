@@ -11,11 +11,6 @@ async function parseDot(dotSource) {
     const jsonStr = await graphviz.layout(dotSource, "json0");
     const data = JSON.parse(jsonStr);
 
-    // Get the bounding box
-    const [left, top, right, bottom] = data.bb.split(',').map(Number);
-    const width = right - left;
-    const height = bottom - top;
-
     // Extract nodes with their positions
     const nodes = data.objects.map(obj => {
         const [x, y] = obj.pos.split(',').map(Number);
@@ -36,19 +31,21 @@ async function parseDot(dotSource) {
         target: nodes[nodeMap.get(edge.head)]
     }));
 
-    return { nodes, edges, width, height };
+    return { nodes, edges };
 }
 
 function createGraph(container, data) {
     // Clear any existing content
     container.innerHTML = '';
 
-    // Create SVG with the size from Graphviz
+    const width = container.clientWidth;
+    const height = container.clientHeight || 400;
+
+    // Create SVG with container dimensions
     const svg = d3.select(container)
         .append('svg')
-        .attr('width', '100%')
-        .attr('height', '100%')
-        .attr('viewBox', `0 0 ${data.width} ${data.height}`);
+        .attr('width', width)
+        .attr('height', height);
 
     // Create a group for zoom/pan
     const g = svg.append('g');
@@ -64,12 +61,8 @@ function createGraph(container, data) {
 
     // Center the initial view
     const initialScale = 0.9;
-    const centerX = data.width / 2;
-    const centerY = data.height / 2;
     svg.call(zoom.transform, d3.zoomIdentity
-        .translate(container.clientWidth/2, container.clientHeight/2)
-        .scale(initialScale)
-        .translate(-centerX, -centerY));
+        .scale(initialScale));
 
     // Add edges
     const edges = g.append('g')
@@ -108,9 +101,9 @@ function createGraph(container, data) {
         .force('charge', d3.forceManyBody()
             .strength(-200))
         // Stronger centering forces
-        .force('center', d3.forceCenter(data.width / 2, data.height / 2).strength(1))
-        .force('x', d3.forceX(data.width / 2).strength(0.3))
-        .force('y', d3.forceY(data.height / 2).strength(0.3));
+        .force('center', d3.forceCenter(width / 2, height / 2).strength(1))
+        .force('x', d3.forceX(width / 2).strength(0.3))
+        .force('y', d3.forceY(height / 2).strength(0.3));
 
     // Add drag behavior
     nodes.call(d3.drag()
