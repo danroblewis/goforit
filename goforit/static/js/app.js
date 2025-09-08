@@ -1,6 +1,7 @@
 import { CodeEvaluator, updateBackgroundColor, renderOutput, clearCollapsedState } from './codeEvaluator.js';
 import { registerAssemblyLanguage } from './assemblyLanguage.js';
 import { registerHaskellLanguage } from './haskellLanguage.js';
+import { registerPrologLanguage } from './prologLanguage.js';
 
 export class App {
     constructor() {
@@ -19,7 +20,8 @@ export class App {
             'assembly_arm64': '/static/examples/assembly_arm64.asm',
             'rust': '/static/examples/Rust.rs',
             'go': '/static/examples/Go.go',
-            'haskell': '/static/examples/Haskell.hs'
+            'haskell': '/static/examples/Haskell.hs',
+            'prolog': '/static/examples/Prolog.pl'
         };
     }
 
@@ -37,6 +39,7 @@ export class App {
                     this.monaco = monaco;
                     registerAssemblyLanguage(monaco);
                     registerHaskellLanguage(monaco);
+                    registerPrologLanguage(monaco);
                     resolve();
                 });
             };
@@ -56,6 +59,8 @@ export class App {
                 return 'asm';
             case 'haskell':
                 return 'haskell';
+            case 'prolog':
+                return 'prolog';
             default:
                 return selectedLanguage;
         }
