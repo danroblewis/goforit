@@ -1,5 +1,5 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
-import { parse as parseDot } from "https://unpkg.com/@ts-graphviz/parser@0.6.0/lib/index.js";
+import { Parser } from "./graphviz-parser.js";
 
 class D3GraphRenderer {
     constructor(container) {
@@ -45,7 +45,8 @@ class D3GraphRenderer {
 
     parseDot(dotSource) {
         try {
-            const ast = parseDot(dotSource);
+            const parser = new Parser();
+            const ast = parser.parse(dotSource);
             const nodes = new Set();
             const links = [];
             
