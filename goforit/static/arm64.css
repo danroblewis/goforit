@@ -1,0 +1,136 @@
+/* Common tooltip styling */
+.asm-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+/* Common styles for all instructions */
+[class^="arm-"] {
+    color: #c586c0;
+}
+
+/* Common styles for all registers */
+[class^="reg-"] {
+    color: #4ec9b0;
+}
+
+/* Common tooltip positioning and styling */
+.asm-tooltip:hover::after,
+[class^="arm-"]:hover::after,
+[class^="reg-"]:hover::after {
+    position: absolute;
+    background: #1e1e1e;
+    padding: 5px;
+    border: 1px solid #333;
+    border-radius: 4px;
+    z-index: 1000;
+    min-width: max-content;
+    white-space: nowrap;
+    left: 100%;
+    margin-left: 5px;
+    top: -20px;
+}
+
+/* Instruction Tooltips */
+.arm-mov:hover::after { content: "MOV: Move data between registers"; }
+.arm-add:hover::after { content: "ADD: Add values (scalar or vector)"; }
+.arm-sub:hover::after { content: "SUB: Subtract values (scalar or vector)"; }
+.arm-mul:hover::after { content: "MUL: Multiply values (scalar or vector)"; }
+.arm-div:hover::after { content: "DIV: Divide values (scalar or vector)"; }
+.arm-and:hover::after { content: "AND: Bitwise AND operation (scalar or vector)"; }
+.arm-orr:hover::after { content: "ORR: Bitwise OR operation (scalar or vector)"; }
+.arm-eor:hover::after { content: "EOR: Bitwise XOR operation (scalar or vector)"; }
+.arm-ldr:hover::after { content: "LDR: Load value from memory into register"; }
+.arm-str:hover::after { content: "STR: Store value from register to memory"; }
+.arm-ldur:hover::after { content: "LDUR: Load register (unscaled offset)"; }
+.arm-stur:hover::after { content: "STUR: Store register (unscaled offset)"; }
+.arm-cmp:hover::after { content: "CMP: Compare values and set flags"; }
+.arm-tst:hover::after { content: "TST: Test bits using AND operation"; }
+.arm-b:hover::after { content: "B: Branch to target address"; }
+.arm-bl:hover::after { content: "BL: Branch with link (call subroutine)"; }
+.arm-ret:hover::after { content: "RET: Return from subroutine"; }
+.arm-svc:hover::after { content: "SVC: Supervisor call"; }
+.arm-nop:hover::after { content: "NOP: No operation"; }
+.arm-adrp:hover::after { content: "ADRP: Form PC-relative address to 4KB page"; }
+
+/* Load/Store Multiple */
+.arm-ld1:hover::after { content: "LD1: Load single-element structures into vector"; }
+.arm-ld2:hover::after { content: "LD2: Load 2-element structures into vectors"; }
+.arm-ld3:hover::after { content: "LD3: Load 3-element structures into vectors"; }
+.arm-ld4:hover::after { content: "LD4: Load 4-element structures into vectors"; }
+.arm-st1:hover::after { content: "ST1: Store single-element structures from vector"; }
+.arm-st2:hover::after { content: "ST2: Store 2-element structures from vectors"; }
+.arm-st3:hover::after { content: "ST3: Store 3-element structures from vectors"; }
+.arm-st4:hover::after { content: "ST4: Store 4-element structures from vectors"; }
+
+/* Advanced Operations */
+.arm-abs:hover::after { content: "ABS: Absolute value (scalar or vector)"; }
+.arm-neg:hover::after { content: "NEG: Negate value (scalar or vector)"; }
+.arm-rev:hover::after { content: "REV: Reverse bytes"; }
+.arm-cls:hover::after { content: "CLS: Count leading sign bits"; }
+.arm-clz:hover::after { content: "CLZ: Count leading zero bits"; }
+.arm-cnt:hover::after { content: "CNT: Population count per byte"; }
+
+/* Floating Point */
+.arm-fadd:hover::after { content: "FADD: Floating-point add (scalar or vector)"; }
+.arm-fsub:hover::after { content: "FSUB: Floating-point subtract (scalar or vector)"; }
+.arm-fmul:hover::after { content: "FMUL: Floating-point multiply (scalar or vector)"; }
+.arm-fdiv:hover::after { content: "FDIV: Floating-point divide (scalar or vector)"; }
+.arm-fcmp:hover::after { content: "FCMP: Floating-point compare"; }
+.arm-fabs:hover::after { content: "FABS: Floating-point absolute value"; }
+.arm-fneg:hover::after { content: "FNEG: Floating-point negate"; }
+.arm-fsqrt:hover::after { content: "FSQRT: Floating-point square root"; }
+
+/* Register Tooltips */
+
+/* General Purpose Registers */
+.reg-x0:hover::after { content: "x0: Function argument/result"; }
+.reg-x1:hover::after { content: "x1: Function argument/scratch"; }
+.reg-x2:hover::after { content: "x2: Function argument/scratch"; }
+.reg-x3:hover::after { content: "x3: Function argument/scratch"; }
+.reg-x4:hover::after { content: "x4: Function argument/scratch"; }
+.reg-x5:hover::after { content: "x5: Function argument/scratch"; }
+.reg-x6:hover::after { content: "x6: Function argument/scratch"; }
+.reg-x7:hover::after { content: "x7: Function argument/scratch"; }
+.reg-x8:hover::after { content: "x8: Indirect result location"; }
+.reg-x9:hover::after { content: "x9: Temporary register"; }
+.reg-x10:hover::after { content: "x10: Temporary register"; }
+.reg-x11:hover::after { content: "x11: Temporary register"; }
+.reg-x12:hover::after { content: "x12: Temporary register"; }
+.reg-x13:hover::after { content: "x13: Temporary register"; }
+.reg-x14:hover::after { content: "x14: Temporary register"; }
+.reg-x15:hover::after { content: "x15: Temporary register"; }
+.reg-x16:hover::after { content: "x16: IP0: Intra-procedure-call scratch register"; }
+.reg-x17:hover::after { content: "x17: IP1: Intra-procedure-call scratch register"; }
+.reg-x18:hover::after { content: "x18: Platform register"; }
+.reg-x19:hover::after { content: "x19: Callee-saved register"; }
+.reg-x20:hover::after { content: "x20: Callee-saved register"; }
+.reg-x21:hover::after { content: "x21: Callee-saved register"; }
+.reg-x22:hover::after { content: "x22: Callee-saved register"; }
+.reg-x23:hover::after { content: "x23: Callee-saved register"; }
+.reg-x24:hover::after { content: "x24: Callee-saved register"; }
+.reg-x25:hover::after { content: "x25: Callee-saved register"; }
+.reg-x26:hover::after { content: "x26: Callee-saved register"; }
+.reg-x27:hover::after { content: "x27: Callee-saved register"; }
+.reg-x28:hover::after { content: "x28: Callee-saved register"; }
+.reg-x29:hover::after { content: "x29: Frame pointer"; }
+.reg-x30:hover::after { content: "x30: Link register"; }
+
+/* 32-bit Registers */
+.reg-w0:hover::after { content: "w0: 32-bit variant of x0 (Function argument/result)"; }
+.reg-w1:hover::after { content: "w1: 32-bit variant of x1 (Function argument/scratch)"; }
+.reg-w2:hover::after { content: "w2: 32-bit variant of x2 (Function argument/scratch)"; }
+.reg-w3:hover::after { content: "w3: 32-bit variant of x3 (Function argument/scratch)"; }
+.reg-w4:hover::after { content: "w4: 32-bit variant of x4 (Function argument/scratch)"; }
+.reg-w5:hover::after { content: "w5: 32-bit variant of x5 (Function argument/scratch)"; }
+.reg-w6:hover::after { content: "w6: 32-bit variant of x6 (Function argument/scratch)"; }
+.reg-w7:hover::after { content: "w7: 32-bit variant of x7 (Function argument/scratch)"; }
+.reg-w8:hover::after { content: "w8: 32-bit variant of x8 (Indirect result location)"; }
+.reg-w9:hover::after { content: "w9: 32-bit variant of x9 (Temporary register)"; }
+.reg-w10:hover::after { content: "w10: 32-bit variant of x10 (Temporary register)"; }
+
+/* Special Registers */
+.reg-sp:hover::after { content: "sp: Stack pointer"; }
+.reg-pc:hover::after { content: "pc: Program counter"; }
+.reg-xzr:hover::after { content: "xzr: Zero register (64-bit)"; }
+.reg-wzr:hover::after { content: "wzr: Zero register (32-bit)"; }
