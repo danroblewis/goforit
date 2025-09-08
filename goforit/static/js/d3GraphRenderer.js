@@ -3,8 +3,11 @@ import { Graphviz } from "./node_modules/@hpcc-js/wasm/dist/index.js";
 
 let graphviz = null;
 
-// Store node positions globally
+// Store graph state globally
 const nodePositions = new Map();
+const viewState = {
+    transform: null  // Will store d3.zoomIdentity transform
+};
 
 async function parseDot(dotSource) {
     if (!graphviz) {
@@ -68,14 +71,19 @@ function createGraph(container, data, width, height) {
         .scaleExtent([0.1, 10])
         .on('zoom', (event) => {
             g.attr('transform', event.transform);
+            // Save the current transform
+            viewState.transform = event.transform;
         });
 
     svg.call(zoom);
 
-    // Center the initial view
-    const initialScale = 0.9;
-    svg.call(zoom.transform, d3.zoomIdentity
-        .scale(initialScale));
+    // Apply saved transform or use initial scale
+    if (viewState.transform) {
+        svg.call(zoom.transform, viewState.transform);
+    } else {
+        const initialScale = 0.9;
+        svg.call(zoom.transform, d3.zoomIdentity.scale(initialScale));
+    }
 
     // Add edges
     const edges = g.append('g')
