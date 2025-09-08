@@ -1,5 +1,5 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
-import { Parser } from "./graphviz-parser.js";
+import { Graphviz } from "./node_modules/@hpcc-js/wasm/dist/index.js";
 
 class D3GraphRenderer {
     constructor(container) {
@@ -43,41 +43,42 @@ class D3GraphRenderer {
         this.svg.call(this.zoom);
     }
 
-    parseDot(dotSource) {
+    async parseDot(dotSource) {
         try {
-            const parser = new Parser();
-            const ast = parser.parse(dotSource);
+            // Initialize Graphviz if not already done
+            if (!this.graphviz) {
+                this.graphviz = await Graphviz.load();
+            }
+
+            // Parse the DOT source into JSON
+            const jsonStr = await this.graphviz.layout(dotSource, "json0");
+            const graphData = JSON.parse(jsonStr);
+
+            // Extract nodes and edges from the JSON
             const nodes = new Set();
             const links = [];
-            
-            // Helper to get node ID, handling both string literals and HTML-like labels
-            const getNodeId = (node) => {
-                if (node.id.type === 'HTMLString') {
-                    return node.id.value.replace(/<[^>]*>/g, '');
-                }
-                return node.id.value;
-            };
 
-            // Process nodes and edges from AST
-            const processStatement = (stmt) => {
-                if (stmt.type === 'Node') {
-                    nodes.add(getNodeId(stmt));
-                } else if (stmt.type === 'Edge') {
-                    // Handle edge lists (a->b->c becomes a->b, b->c)
-                    for (let i = 0; i < stmt.edge_list.length - 1; i++) {
-                        const source = getNodeId(stmt.edge_list[i]);
-                        const target = getNodeId(stmt.edge_list[i + 1]);
+            // Process nodes
+            if (graphData.objects) {
+                graphData.objects.forEach(obj => {
+                    if (obj.name) {
+                        nodes.add(obj.name);
+                    }
+                });
+            }
+
+            // Process edges
+            if (graphData.edges) {
+                graphData.edges.forEach(edge => {
+                    if (edge.tail && edge.head) {
+                        const source = edge.tail;
+                        const target = edge.head;
                         nodes.add(source);
                         nodes.add(target);
                         links.push({ source, target });
                     }
-                } else if (stmt.type === 'Subgraph') {
-                    stmt.statements.forEach(processStatement);
-                }
-            };
-
-            // Process all statements in the graph
-            ast.children.forEach(processStatement);
+                });
+            }
 
             return {
                 nodes: Array.from(nodes).map(id => ({ id })),
@@ -89,8 +90,8 @@ class D3GraphRenderer {
         }
     }
 
-    updateGraph(dotSource) {
-        const { nodes, links } = this.parseDot(dotSource);
+    async updateGraph(dotSource) {
+        const { nodes, links } = await this.parseDot(dotSource);
         
         // Store old positions
         this.nodes.forEach(node => {
