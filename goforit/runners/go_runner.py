@@ -12,7 +12,7 @@ def parse_build_flags(code: str) -> list[str]:
     flags_match = re.match(r'//\s*flags:\s*(.*)', code)
     if not flags_match:
         # Default optimization flags for smaller binaries and faster builds
-        return ['-ldflags=-s -w']  # Strip debug info and DWARF tables
+        return ['-ldflags', '-s -w']  # Strip debug info and DWARF tables
     # Use shlex to properly handle quoted strings
     return shlex.split(flags_match.group(1))
 
@@ -66,19 +66,21 @@ async def run_go(code: str) -> CodeResult:
         except Exception as e:
             print(f"Error reading binary: {e}")
             binary_data = b''
+
+        # Format hexdump before parallel execution
+        hexdump_output = format_hexdump(binary_data)
         
         # Create tasks for parallel execution
         tasks = [
             # Get assembly from go build with -gcflags=-S, using shell to redirect stderr to stdout
             run_process(['sh', '-c', 'go build -mod=mod -gcflags=-S ' + main_go + ' 2>&1']),
-            format_hexdump(binary_data),                 # hexdump of first 1KB
             run_process([executable])                    # program execution
         ]
         
         # Run all tasks in parallel and wait for results
         try:
             results = await asyncio.gather(*tasks)
-            asm_result, hexdump_output, run_result = results
+            asm_result, run_result = results
         except Exception as e:
             print(f"Error in parallel execution: {e}")
             return CodeResult(stdout="", stderr=str(e), return_code=1)

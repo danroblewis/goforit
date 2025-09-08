@@ -1,4 +1,4 @@
-// flags: -ldflags=-s,-w -trimpath
+// flags: -ldflags "-s -w" -trimpath
 
 package main
 

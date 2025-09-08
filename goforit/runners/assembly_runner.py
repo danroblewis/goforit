@@ -44,12 +44,27 @@ async def run_assembly(code: str) -> CodeResult:
             if assemble_result.return_code != 0:
                 return assemble_result
 
+            # Link with default entry point
+            link_result = await run_process(['ld', '-o', os.path.join(tmpdir, 'code'), obj_file])
+
         elif arch == 'arm64':
             # GNU as for ARM64
             obj_file = os.path.join(tmpdir, 'code.o')
             assemble_result = await run_process(['as', '-o', obj_file, source_file])
             if assemble_result.return_code != 0:
                 return assemble_result
+
+            # Link with proper alignment and entry point for ARM64 on macOS
+            link_result = await run_process([
+                'ld',
+                '-o', os.path.join(tmpdir, 'code'),
+                '-e', '_start',  # Set entry point
+                '-arch', 'arm64',
+                '-platform_version', 'macos', '11.0', '11.0',  # Set min version
+                '-lSystem',  # Link with system libraries
+                '-syslibroot', '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk',
+                obj_file
+            ])
 
         else:
             return CodeResult(
@@ -58,11 +73,10 @@ async def run_assembly(code: str) -> CodeResult:
                 return_code=1
             )
 
-        # Link the object file
-        executable = os.path.join(tmpdir, 'code')
-        link_result = await run_process(['ld', '-o', executable, obj_file])
         if link_result.return_code != 0:
             return link_result
+
+        executable = os.path.join(tmpdir, 'code')
 
         # Read binary for hexdump
         try:
@@ -72,15 +86,17 @@ async def run_assembly(code: str) -> CodeResult:
             print(f"Error reading binary: {e}")
             binary_data = b''
 
-        # Run objdump, hexdump, and program in parallel
+        # Format hexdump before parallel execution
+        hexdump_output = format_hexdump(binary_data)
+
+        # Run objdump and program in parallel
         tasks = [
             run_process(['objdump', '-d', executable]),  # objdump
-            format_hexdump(binary_data),                 # hexdump
             run_process([executable])                    # program execution
         ]
 
         try:
-            objdump_result, hexdump_output, run_result = await asyncio.gather(*tasks)
+            objdump_result, run_result = await asyncio.gather(*tasks)
         except Exception as e:
             print(f"Error in parallel execution: {e}")
             return CodeResult(stdout="", stderr=str(e), return_code=1)
