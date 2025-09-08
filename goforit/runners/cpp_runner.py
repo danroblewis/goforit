@@ -2,7 +2,7 @@ import tempfile
 import os
 import asyncio
 from .base import CodeResult, CodeOutput, run_process
-from .utils import detect_system_arch, format_hexdump
+from .utils import detect_system_arch, format_binary_for_hexdump
 
 async def run_cpp(code: str) -> CodeResult:
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -42,15 +42,17 @@ async def run_cpp(code: str) -> CodeResult:
             print(f"Error reading binary: {e}")
             binary_data = b''
 
-        # Run objdump, hexdump, and program in parallel
+        # Format binary data as base64
+        hexdump_data = format_binary_for_hexdump(binary_data)
+
+        # Run objdump and program in parallel
         tasks = [
             run_process(['objdump', '-d', executable]),  # objdump
-            format_hexdump(binary_data),                 # hexdump
             run_process([executable])                    # program execution
         ]
 
         try:
-            objdump_result, hexdump_output, run_result = await asyncio.gather(*tasks)
+            objdump_result, run_result = await asyncio.gather(*tasks)
         except Exception as e:
             print(f"Error in parallel execution: {e}")
             return CodeResult(stdout="", stderr=str(e), return_code=1)
@@ -62,7 +64,7 @@ async def run_cpp(code: str) -> CodeResult:
         run_result.code_outputs = [
             CodeOutput(content=asm_output, language="asm-intel"),
             CodeOutput(content=objdump_result.stdout, language=f"asm-{arch}"),
-            CodeOutput(content=hexdump_output, language="hexdump")
+            CodeOutput(content=hexdump_data, language="hexdump-binary")
         ]
 
         return run_result

@@ -4,7 +4,7 @@ import re
 import asyncio
 from typing import Optional, Tuple
 from .base import CodeResult, CodeOutput, run_process
-from .utils import format_hexdump
+from .utils import format_binary_for_hexdump
 
 def parse_arch_and_syntax(code: str) -> Tuple[Optional[str], Optional[str]]:
     """Extract architecture and syntax from code comments."""
@@ -86,8 +86,8 @@ async def run_assembly(code: str) -> CodeResult:
             print(f"Error reading binary: {e}")
             binary_data = b''
 
-        # Format hexdump before parallel execution
-        hexdump_output = format_hexdump(binary_data)
+        # Format binary data as base64
+        hexdump_data = format_binary_for_hexdump(binary_data)
 
         # Run objdump and program in parallel
         tasks = [
@@ -107,7 +107,7 @@ async def run_assembly(code: str) -> CodeResult:
         # Add objdump and hexdump outputs
         run_result.code_outputs = [
             CodeOutput(content=objdump_result.stdout, language=f"asm-{arch}"),
-            CodeOutput(content=hexdump_output, language="hexdump")
+            CodeOutput(content=hexdump_data, language="hexdump-binary")
         ]
 
         return run_result

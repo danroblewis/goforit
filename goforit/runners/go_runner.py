@@ -5,7 +5,7 @@ import time
 import asyncio
 import shlex
 from .base import CodeResult, CodeOutput, run_process
-from .utils import detect_system_arch, format_hexdump
+from .utils import detect_system_arch, format_binary_for_hexdump
 
 def parse_build_flags(code: str) -> list[str]:
     """Extract build flags from first line comment."""
@@ -56,7 +56,7 @@ async def run_go(code: str) -> CodeResult:
             return build_result
         build_time = time.time() - build_start
 
-        # Run everything in parallel: go build -gcflags=-S, hexdump, and program execution
+        # Run everything in parallel: go build -gcflags=-S and program execution
         parallel_start = time.time()
         
         # Read binary for hexdump, but only read first 1KB to avoid runtime
@@ -67,8 +67,8 @@ async def run_go(code: str) -> CodeResult:
             print(f"Error reading binary: {e}")
             binary_data = b''
 
-        # Format hexdump before parallel execution
-        hexdump_output = format_hexdump(binary_data)
+        # Format binary data as base64
+        hexdump_data = format_binary_for_hexdump(binary_data)
         
         # Create tasks for parallel execution
         tasks = [
@@ -102,7 +102,7 @@ async def run_go(code: str) -> CodeResult:
         # Add compiler assembly and hexdump outputs
         run_result.code_outputs = [
             CodeOutput(content=asm_result.stdout, language="asm-go"),
-            CodeOutput(content=hexdump_output, language="hexdump")
+            CodeOutput(content=hexdump_data, language="hexdump-binary")  # Note the new language type
         ]
 
         # Print timing info

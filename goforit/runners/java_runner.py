@@ -3,7 +3,7 @@ import os
 import re
 import asyncio
 from .base import CodeResult, CodeOutput, run_process
-from .utils import format_hexdump
+from .utils import format_binary_for_hexdump
 
 async def run_java(code: str) -> CodeResult:
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -36,15 +36,17 @@ async def run_java(code: str) -> CodeResult:
             print(f"Error reading class file: {e}")
             binary_data = b''
 
-        # Run javap, hexdump, and program in parallel
+        # Format binary data as base64
+        hexdump_data = format_binary_for_hexdump(binary_data)
+
+        # Run javap and program in parallel
         tasks = [
             run_process(['javap', '-c', '-v', class_file]),  # bytecode
-            format_hexdump(binary_data),                     # hexdump
             run_process(['java', '-cp', tmpdir, class_name]) # program execution
         ]
 
         try:
-            javap_result, hexdump_output, run_result = await asyncio.gather(*tasks)
+            javap_result, run_result = await asyncio.gather(*tasks)
         except Exception as e:
             print(f"Error in parallel execution: {e}")
             return CodeResult(stdout="", stderr=str(e), return_code=1)
@@ -55,7 +57,7 @@ async def run_java(code: str) -> CodeResult:
         # Add bytecode and hexdump outputs
         run_result.code_outputs = [
             CodeOutput(content=javap_result.stdout, language="java-bytecode"),
-            CodeOutput(content=hexdump_output, language="hexdump")
+            CodeOutput(content=hexdump_data, language="hexdump-binary")
         ]
 
         return run_result
