@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from .runners import LANGUAGE_RUNNERS, CodeResult, CodeOutput
+from .graphviz_processor import process_result
 
 app = FastAPI()
 
@@ -65,6 +66,10 @@ async def evaluate(request: CodeRequest) -> CodeResponse:
     run_start = time.time()
     runner = LANGUAGE_RUNNERS[request.language]
     result = await runner(request.code)
+    
+    # Process output for Graphviz diagrams
+    process_result(result)
+    
     run_time = time.time() - run_start
     
     # Convert to response model

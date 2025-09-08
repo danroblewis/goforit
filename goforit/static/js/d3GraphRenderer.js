@@ -117,8 +117,7 @@ class D3GraphRenderer {
     }
 
     renderGraph() {
-
-        // Update edges first (so they render under nodes)
+        // Update links
         const links = this.linksGroup
             .selectAll("line")
             .data(this.links, d => `${d.source.id || d.source}-${d.target.id || d.target}`);
@@ -130,7 +129,7 @@ class D3GraphRenderer {
             .style("stroke", "#e0e0e0")
             .style("stroke-width", 1);
 
-        // Then update nodes
+        // Update nodes
         const nodes = this.nodesGroup
             .selectAll("g")
             .data(this.nodes, d => d.id);
@@ -144,44 +143,28 @@ class D3GraphRenderer {
                 .on("drag", this.dragged.bind(this))
                 .on("end", this.dragended.bind(this)));
 
+        nodesEnter.append("circle")
+            .attr("r", 5)
+            .style("fill", "#e0e0e0");
+
         nodesEnter.append("text")
-            .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "middle")
+            .attr("dx", 12)
+            .attr("dy", ".35em")
             .style("fill", "#e0e0e0")
-            .style("user-select", "none")
             .text(d => d.id);
 
         // Set up or update force simulation
         if (!this.simulation) {
             this.simulation = d3.forceSimulation()
-                .force("link", d3.forceLink().id(d => d.id).distance(150))
-                .force("charge", d3.forceManyBody().strength(-200))
+                .force("link", d3.forceLink().id(d => d.id).distance(100))
+                .force("charge", d3.forceManyBody().strength(-100))
                 .force("center", d3.forceCenter(this.width / 2, this.height / 2))
                 .on("tick", () => {
-                    // Calculate edge endpoints with offset from node centers
-                    const nodeRadius = 40; // Distance to offset edges from node centers
-                    
-                    this.linksGroup.selectAll("line").attr("x1", d => {
-                        const dx = d.target.x - d.source.x;
-                        const dy = d.target.y - d.source.y;
-                        const angle = Math.atan2(dy, dx);
-                        return d.source.x + Math.cos(angle) * nodeRadius;
-                    }).attr("y1", d => {
-                        const dx = d.target.x - d.source.x;
-                        const dy = d.target.y - d.source.y;
-                        const angle = Math.atan2(dy, dx);
-                        return d.source.y + Math.sin(angle) * nodeRadius;
-                    }).attr("x2", d => {
-                        const dx = d.target.x - d.source.x;
-                        const dy = d.target.y - d.source.y;
-                        const angle = Math.atan2(dy, dx);
-                        return d.target.x - Math.cos(angle) * nodeRadius;
-                    }).attr("y2", d => {
-                        const dx = d.target.x - d.source.x;
-                        const dy = d.target.y - d.source.y;
-                        const angle = Math.atan2(dy, dx);
-                        return d.target.y - Math.sin(angle) * nodeRadius;
-                    });
+                    this.linksGroup.selectAll("line")
+                        .attr("x1", d => d.source.x)
+                        .attr("y1", d => d.source.y)
+                        .attr("x2", d => d.target.x)
+                        .attr("y2", d => d.target.y);
 
                     this.nodesGroup.selectAll("g")
                         .attr("transform", d => `translate(${d.x},${d.y})`);

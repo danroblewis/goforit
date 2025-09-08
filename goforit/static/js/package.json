@@ -1,15 +1,9 @@
 {
-  "name": "code-evaluator-frontend",
+  "name": "goforit-frontend",
   "version": "1.0.0",
   "type": "module",
-  "scripts": {
-    "test": "jest"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.24.0",
-    "@babel/preset-env": "^7.24.0",
-    "babel-jest": "^29.7.0",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0"
+  "dependencies": {
+    "@hpcc-js/wasm": "^2.13.0",
+    "d3": "^7.8.5"
   }
 }
