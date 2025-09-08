@@ -1,229 +1,146 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import { Graphviz } from "./node_modules/@hpcc-js/wasm/dist/index.js";
 
-class D3GraphRenderer {
-    constructor(container) {
-        this.container = container;
-        this.width = container.clientWidth;
-        this.height = container.clientHeight || 400;
+let graphviz = null;
 
-        // Create SVG
-        this.svg = d3.select(container)
-            .append("svg")
-            .attr("width", "100%")
-            .attr("height", "100%")
-            .attr("viewBox", [0, 0, this.width, this.height]);
-
-        // Add zoom behavior
-        this.svg.call(d3.zoom()
-            .extent([[0, 0], [this.width, this.height]])
-            .scaleExtent([0.1, 8])
-            .on("zoom", ({transform}) => {
-                this.g.attr("transform", transform);
-            }));
-
-        // Create main group for zoom/pan
-        this.g = this.svg.append("g");
-
-        // Create groups for links and nodes
-        this.links = this.g.append("g").attr("class", "links");
-        this.nodes = this.g.append("g").attr("class", "nodes");
-
-        // Initialize simulation
-        this.simulation = d3.forceSimulation()
-            .force("charge", d3.forceManyBody().strength(-800))
-            .force("center", d3.forceCenter(this.width / 2, this.height / 2))
-            .force("x", d3.forceX(this.width / 2).strength(0.1))
-            .force("y", d3.forceY(this.height / 2).strength(0.1))
-            .force("link", d3.forceLink().distance(150).strength(1));
+async function parseDot(dotSource) {
+    if (!graphviz) {
+        graphviz = await Graphviz.load();
     }
 
-    async render(dotSource) {
-        try {
-            // Initialize Graphviz if needed
-            if (!this.graphviz) {
-                this.graphviz = await Graphviz.load();
+    const jsonStr = await graphviz.layout(dotSource, "json0");
+    const data = JSON.parse(jsonStr);
+
+    const nodes = new Set();
+    const edges = [];
+
+    // Get nodes from edges first
+    if (data.edges) {
+        data.edges.forEach(edge => {
+            if (edge.tail && edge.head) {
+                nodes.add(edge.tail);
+                nodes.add(edge.head);
+                edges.push({ source: edge.tail, target: edge.head });
             }
+        });
+    }
 
-            // Parse DOT to JSON
-            const jsonStr = await this.graphviz.layout(dotSource, "json0");
-            const graphData = JSON.parse(jsonStr);
-
-            // Extract nodes and edges
-            const nodeSet = new Set();
-            const links = [];
-
-            // Collect nodes from edges first
-            if (graphData.edges) {
-                graphData.edges.forEach(edge => {
-                    if (edge.tail && edge.head) {
-                        nodeSet.add(edge.tail);
-                        nodeSet.add(edge.head);
-                        links.push({
-                            source: edge.tail,
-                            target: edge.head
-                        });
-                    }
-                });
+    // Add any standalone nodes
+    if (data.objects) {
+        data.objects.forEach(obj => {
+            if (obj.name) {
+                nodes.add(obj.name);
             }
-
-            // Add any standalone nodes
-            if (graphData.objects) {
-                graphData.objects.forEach(obj => {
-                    if (obj.name) {
-                        nodeSet.add(obj.name);
-                    }
-                });
-            }
-
-            const nodes = Array.from(nodeSet).map(id => ({id}));
-
-            // Update links
-            const linkElements = this.links
-                .selectAll("line")
-                .data(links)
-                .join("line")
-                .attr("stroke", "#e0e0e0")
-                .attr("stroke-width", 1)
-                .attr("stroke-opacity", 0.6);
-
-            // Update nodes
-            const nodeElements = this.nodes
-                .selectAll("g")
-                .data(nodes, d => d.id)
-                .join("g")
-                .call(this.drag());
-
-            // Clear old elements
-            nodeElements.selectAll("*").remove();
-
-            // Add circles to nodes
-            nodeElements.append("circle")
-                .attr("r", 6)
-                .attr("fill", "#e0e0e0");
-
-            // Add labels to nodes
-            nodeElements.append("text")
-                .attr("x", 10)
-                .attr("y", 3)
-                .text(d => d.id)
-                .attr("fill", "#e0e0e0")
-                .style("font-family", "monospace")
-                .style("font-size", "12px");
-
-            // Update simulation
-            this.simulation
-                .nodes(nodes)
-                .force("link")
-                .links(links);
-
-            // Update positions on tick
-            this.simulation.on("tick", () => {
-                linkElements
-                    .attr("x1", d => d.source.x)
-                    .attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x)
-                    .attr("y2", d => d.target.y);
-
-                nodeElements
-                    .attr("transform", d => `translate(${d.x},${d.y})`);
-            });
-
-            // Restart simulation
-            this.simulation.alpha(1).restart();
-
-        } catch (error) {
-            console.error("Failed to render graph:", error);
-        }
+        });
     }
 
-    drag() {
-        return d3.drag()
-            .on("start", (event, d) => {
-                if (!event.active) this.simulation.alphaTarget(0.3).restart();
-                d.fx = d.x;
-                d.fy = d.y;
-            })
-            .on("drag", (event, d) => {
-                d.fx = event.x;
-                d.fy = event.y;
-            })
-            .on("end", (event, d) => {
-                if (!event.active) this.simulation.alphaTarget(0);
-                d.fx = null;
-                d.fy = null;
-            });
-    }
+    return {
+        nodes: Array.from(nodes).map(id => ({ id })),
+        edges
+    };
+}
 
-    destroy() {
-        if (this.simulation) {
-            this.simulation.stop();
-        }
-        if (this.svg) {
-            this.svg.remove();
-        }
-    }
+function createGraph(container, data) {
+    // Clear any existing content
+    container.innerHTML = '';
+
+    const width = container.clientWidth;
+    const height = container.clientHeight || 400;
+
+    // Create SVG
+    const svg = d3.select(container)
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+
+    // Create the simulation
+    const simulation = d3.forceSimulation(data.nodes)
+        .force('link', d3.forceLink(data.edges)
+            .id(d => d.id)
+            .distance(100))
+        .force('charge', d3.forceManyBody().strength(-400))
+        .force('center', d3.forceCenter(width / 2, height / 2));
+
+    // Add edges
+    const edges = svg.append('g')
+        .selectAll('line')
+        .data(data.edges)
+        .join('line')
+        .style('stroke', '#888')
+        .style('stroke-width', 1)
+        .style('stroke-opacity', 0.6);
+
+    // Add nodes
+    const nodes = svg.append('g')
+        .selectAll('g')
+        .data(data.nodes)
+        .join('g');
+
+    // Add circles to nodes
+    nodes.append('circle')
+        .attr('r', 5)
+        .style('fill', '#fff');
+
+    // Add labels
+    nodes.append('text')
+        .attr('x', 8)
+        .attr('y', 4)
+        .style('fill', '#fff')
+        .style('font-family', 'monospace')
+        .style('font-size', '12px')
+        .text(d => d.id);
+
+    // Add drag behavior
+    nodes.call(d3.drag()
+        .on('start', (event, d) => {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        })
+        .on('drag', (event, d) => {
+            d.fx = event.x;
+            d.fy = event.y;
+        })
+        .on('end', (event, d) => {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }));
+
+    // Update positions on each tick
+    simulation.on('tick', () => {
+        edges
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
+
+        nodes.attr('transform', d => `translate(${d.x},${d.y})`);
+    });
+
+    return simulation;
 }
 
 export async function renderD3Graph(dotSource) {
     try {
+        // Create container
         const container = document.createElement('div');
-        container.className = 'graph-container';
         container.style.width = '100%';
         container.style.height = '400px';
+        container.className = 'graph-container';
 
-        const renderer = new D3GraphRenderer(container);
-        await renderer.render(dotSource);
+        // Parse the DOT source
+        const data = await parseDot(dotSource);
 
-        // Store renderer instance for cleanup
-        container._renderer = renderer;
+        // Create the graph
+        const simulation = createGraph(container, data);
 
-        // Add click handler for modal view
-        container.addEventListener('click', async (e) => {
-            const modalContainer = document.createElement('div');
-            modalContainer.className = 'graph-modal';
-            modalContainer.innerHTML = `
-                <div class="graph-modal-content">
-                    <div class="graph-modal-close">×</div>
-                    <div class="graph-modal-graph"></div>
-                </div>
-            `;
-
-            // Set up modal close handlers
-            const closeModal = () => {
-                if (modalRenderer) modalRenderer.destroy();
-                modalContainer.remove();
-            };
-
-            modalContainer.querySelector('.graph-modal-close').onclick = (e) => {
-                closeModal();
-                e.stopPropagation();
-            };
-
-            modalContainer.onclick = (e) => {
-                if (e.target === modalContainer) closeModal();
-            };
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') closeModal();
-            }, { once: true });
-
-            // Create new renderer for modal
-            document.body.appendChild(modalContainer);
-            const modalGraph = modalContainer.querySelector('.graph-modal-graph');
-            modalGraph.style.width = '100%';
-            modalGraph.style.height = '100%';
-            
-            const modalRenderer = new D3GraphRenderer(modalGraph);
-            await modalRenderer.render(dotSource);
-
-            modalContainer.classList.add('visible');
-            e.stopPropagation();
-        });
+        // Store simulation for cleanup
+        container._simulation = simulation;
 
         return container;
     } catch (error) {
-        console.error('D3 graph rendering failed:', error);
-        return `<pre class="error">Failed to render graph:\n${error.message}</pre>`;
+        console.error('Failed to render graph:', error);
+        return `<pre class="error">Failed to render graph: ${error.message}</pre>`;
     }
 }
