@@ -34,12 +34,9 @@ async function parseDot(dotSource) {
     return { nodes, edges };
 }
 
-function createGraph(container, data) {
+function createGraph(container, data, width, height) {
     // Clear any existing content
     container.innerHTML = '';
-
-    const width = container.clientWidth;
-    const height = container.clientHeight || 400;
 
     // Create SVG with container dimensions
     const svg = d3.select(container)
@@ -150,8 +147,23 @@ export async function renderD3Graph(dotSource) {
         // Parse the DOT source
         const data = await parseDot(dotSource);
 
-        // Create the graph
-        const simulation = createGraph(container, data);
+        // Create a temporary div to measure available space
+        const measureDiv = document.createElement('div');
+        measureDiv.style.width = '100%';
+        measureDiv.style.height = '400px';
+        measureDiv.style.position = 'absolute';
+        measureDiv.style.visibility = 'hidden';
+        document.body.appendChild(measureDiv);
+
+        // Get dimensions
+        const width = measureDiv.clientWidth;
+        const height = measureDiv.clientHeight;
+
+        // Clean up
+        document.body.removeChild(measureDiv);
+
+        // Create the graph with measured dimensions
+        const simulation = createGraph(container, data, width, height);
 
         // Store simulation for cleanup
         container._simulation = simulation;
