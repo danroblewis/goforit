@@ -53,6 +53,35 @@ async function parseDot(dotSource) {
     return { nodes, edges };
 }
 
+function zoomToFit(svg, g, padding = 50) {
+    // Get the bounds of the graph content
+    const bounds = g.node().getBBox();
+    
+    // Get the dimensions of the SVG container
+    const width = parseInt(svg.style('width'));
+    const height = parseInt(svg.style('height'));
+    
+    // Calculate scale and translate to fit the graph
+    const scale = Math.min(
+        width / (bounds.width + padding * 2),
+        height / (bounds.height + padding * 2)
+    );
+    
+    const translate = [
+        (width - bounds.width * scale) / 2 - bounds.x * scale,
+        (height - bounds.height * scale) / 2 - bounds.y * scale
+    ];
+    
+    // Create and save the new transform
+    const transform = d3.zoomIdentity
+        .translate(translate[0], translate[1])
+        .scale(scale);
+    
+    viewState.transform = transform;
+    
+    return transform;
+}
+
 function createGraph(container, data, width, height) {
     // Clear any existing content
     container.innerHTML = '';
@@ -76,14 +105,6 @@ function createGraph(container, data, width, height) {
         });
 
     svg.call(zoom);
-
-    // Apply saved transform or use initial scale
-    if (viewState.transform) {
-        svg.call(zoom.transform, viewState.transform);
-    } else {
-        const initialScale = 0.9;
-        svg.call(zoom.transform, d3.zoomIdentity.scale(initialScale));
-    }
 
     // Add edges
     const edges = g.append('g')
@@ -159,6 +180,17 @@ function createGraph(container, data, width, height) {
         data.nodes.forEach(node => {
             nodePositions.set(node.id, { x: node.x, y: node.y });
         });
+    });
+
+    // When simulation ends, zoom to fit
+    simulation.on('end', () => {
+        // Wait a tick to ensure all elements are properly positioned
+        setTimeout(() => {
+            const transform = zoomToFit(svg, g);
+            svg.transition()
+                .duration(750)
+                .call(zoom.transform, transform);
+        }, 0);
     });
 
     // Start with a very low alpha since we might be using saved positions
