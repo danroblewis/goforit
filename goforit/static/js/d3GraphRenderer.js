@@ -53,7 +53,7 @@ async function parseDot(dotSource) {
     return { nodes, edges };
 }
 
-function zoomToFit(svg, g, padding = 50) {
+function zoomToFit(svg, g, zoom, padding = 50) {
     // Get the bounds of the graph content
     const bounds = g.node().getBBox();
     
@@ -77,9 +77,13 @@ function zoomToFit(svg, g, padding = 50) {
         .translate(translate[0], translate[1])
         .scale(scale);
     
+    // Update the global view state
     viewState.transform = transform;
     
-    return transform;
+    // Apply the transform with animation
+    svg.transition()
+        .duration(750)
+        .call(zoom.transform, transform);
 }
 
 function createGraph(container, data, width, height) {
@@ -105,6 +109,11 @@ function createGraph(container, data, width, height) {
         });
 
     svg.call(zoom);
+
+    // If we have a saved transform, apply it immediately
+    if (viewState.transform) {
+        g.attr('transform', viewState.transform);
+    }
 
     // Add edges
     const edges = g.append('g')
@@ -182,15 +191,14 @@ function createGraph(container, data, width, height) {
         });
     });
 
-    // When simulation ends, zoom to fit
+    // When simulation ends, zoom to fit only if we don't have a saved transform
     simulation.on('end', () => {
-        // Wait a tick to ensure all elements are properly positioned
-        setTimeout(() => {
-            const transform = zoomToFit(svg, g);
-            svg.transition()
-                .duration(750)
-                .call(zoom.transform, transform);
-        }, 0);
+        if (!viewState.transform) {
+            // Wait a tick to ensure all elements are properly positioned
+            setTimeout(() => {
+                zoomToFit(svg, g, zoom);
+            }, 0);
+        }
     });
 
     // Start with a very low alpha since we might be using saved positions
