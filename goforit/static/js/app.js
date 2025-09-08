@@ -3,6 +3,7 @@ import { registerAssemblyLanguage } from './assemblyLanguage.js';
 import { registerHaskellLanguage } from './haskellLanguage.js';
 import { registerPrologLanguage } from './prologLanguage.js';
 import { registerRubyLanguage } from './rubyLanguage.js';
+import { registerBrainfuckLanguage } from './brainfuckLanguage.js';
 
 export class App {
     constructor() {
@@ -23,7 +24,8 @@ export class App {
             'go': '/static/examples/Go.go',
             'haskell': '/static/examples/Haskell.hs',
             'prolog': '/static/examples/Prolog.pl',
-            'ruby': '/static/examples/Ruby.rb'
+            'ruby': '/static/examples/Ruby.rb',
+            'brainfuck': '/static/examples/Brainfuck.bf'
         };
     }
 
@@ -43,6 +45,7 @@ export class App {
                     registerHaskellLanguage(monaco);
                     registerPrologLanguage(monaco);
                     registerRubyLanguage(monaco);
+                    registerBrainfuckLanguage(monaco);
                     resolve();
                 });
             };
@@ -66,6 +69,8 @@ export class App {
                 return 'prolog';
             case 'ruby':
                 return 'ruby';
+            case 'brainfuck':
+                return 'brainfuck';
             default:
                 return selectedLanguage;
         }
