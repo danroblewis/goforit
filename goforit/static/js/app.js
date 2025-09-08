@@ -190,7 +190,11 @@ export class App {
         const result = await this.evaluator.queueEvaluation(code, language);
         
         if (result) {
+            // Always render, but only update background color for latest results
             this.updateUI(result);
+            if (result.isLatest) {
+                updateBackgroundColor(result);
+            }
         }
     }
 
@@ -205,6 +209,5 @@ export class App {
     updateUI(result) {
         const outputDiv = document.getElementById('output');
         renderOutput(outputDiv, result);
-        updateBackgroundColor(result);
     }
 }

@@ -17,30 +17,29 @@ export function clearCollapsedState() {
     collapsedSections.clear();
 }
 
-function toggleCollapse(contentId, title) {
-    const content = document.getElementById(contentId);
-    const isCollapsed = content.classList.toggle('collapsed');
-    collapsedSections.set(title, isCollapsed);
+function toggleCollapse(sectionId, title) {
+    const section = document.getElementById(sectionId);
+    const isExpanded = section.classList.toggle('expanded');
+    collapsedSections.set(title, !isExpanded);
 }
 
 function createCollapsibleSection(title, content, language) {
     const sectionId = `section-${Math.random().toString(36).substr(2, 9)}`;
-    const contentId = `content-${sectionId}`;
     const wasCollapsed = collapsedSections.get(title) ?? true; // Default to collapsed
 
     const section = document.createElement('div');
+    section.id = sectionId;
     section.className = 'code-output-block';
+    if (!wasCollapsed) {
+        section.classList.add('expanded');
+    }
 
     const header = document.createElement('div');
     header.className = 'collapsible-header';
     header.innerHTML = `<span class="collapsible-title">${title}</span>`;
 
     const contentDiv = document.createElement('div');
-    contentDiv.id = contentId;
     contentDiv.className = 'collapsible-content';
-    if (wasCollapsed) {
-        contentDiv.classList.add('collapsed');
-    }
     
     if (language && language.startsWith('asm-')) {
         contentDiv.innerHTML = highlightAssembly(content);
@@ -53,7 +52,7 @@ function createCollapsibleSection(title, content, language) {
     section.appendChild(header);
     section.appendChild(contentDiv);
 
-    header.addEventListener('click', () => toggleCollapse(contentId, title));
+    header.addEventListener('click', () => toggleCollapse(sectionId, title));
     collapsedSections.set(title, wasCollapsed);
 
     return section;
@@ -67,6 +66,9 @@ export function renderOutput(outputDiv, result) {
 
     // Display code outputs first (assembly, objdump, hexdump)
     if (result.code_outputs && result.code_outputs.length > 0) {
+        const container = document.createElement('div');
+        container.className = 'code-outputs-container';
+        
         result.code_outputs.forEach(output => {
             let title;
             if (output.language === 'asm-intel') {
@@ -80,8 +82,10 @@ export function renderOutput(outputDiv, result) {
             }
 
             const section = createCollapsibleSection(title, output.content, output.language);
-            fragment.appendChild(section);
+            container.appendChild(section);
         });
+        
+        fragment.appendChild(container);
     }
 
     // Then display stdout/stderr as regular sections
@@ -128,60 +132,27 @@ export function updateBackgroundColor(result) {
 export class CodeEvaluator {
     constructor() {
         this.currentEvaluation = null;
-        this.nextEvaluation = null;
+        this.evaluationCount = 0;
     }
 
     async queueEvaluation(code, language) {
-        // Store this as the next evaluation to run
-        this.nextEvaluation = { code, language };
+        // Increment evaluation count
+        const thisEvaluation = ++this.evaluationCount;
 
-        // If we're already evaluating, let that finish
-        if (this.currentEvaluation) {
+        try {
+            const response = await fetch('/api/evaluate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, language })
+            });
+
+        const result = await response.json();
+        result.isLatest = (thisEvaluation === this.evaluationCount);
+        return result;
+        } catch (error) {
+            console.error('Evaluation failed:', error);
+            // Still return null on error to avoid rendering
             return null;
-        }
-
-        // Start processing the queue
-        return this._processQueue();
-    }
-
-    async _processQueue() {
-        while (this.nextEvaluation) {
-            // Take the next evaluation
-            const { code, language } = this.nextEvaluation;
-            this.nextEvaluation = null;
-
-            // Create a new AbortController for this request
-            const controller = new AbortController();
-            
-            try {
-                const start = performance.now();
-                this.currentEvaluation = fetch('/api/evaluate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code, language }),
-                    signal: controller.signal
-                });
-
-                // Wait for the response
-                const response = await this.currentEvaluation;
-                const result = await response.json();
-                console.log(`API request time: ${(performance.now() - start).toFixed(1)}ms`);
-
-                // If there's no next evaluation, return the result
-                if (!this.nextEvaluation) {
-                    return result;
-                }
-
-                // Otherwise, continue the loop to process the next evaluation
-            } catch (error) {
-                if (error.name === 'AbortError') {
-                    // Ignore abort errors, just continue with the next evaluation
-                    continue;
-                }
-                throw error;
-            } finally {
-                this.currentEvaluation = null;
-            }
         }
     }
 
