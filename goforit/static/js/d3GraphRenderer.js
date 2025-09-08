@@ -75,11 +75,11 @@ class D3GraphRenderer {
             if (graphData.edges) {
                 graphData.edges.forEach(edge => {
                     if (edge.tail && edge.head) {
-                        const source = nodeMap.get(edge.tail);
-                        const target = nodeMap.get(edge.head);
-                        if (source && target) {
-                            links.push({ source, target });
-                        }
+                        // Store edges with IDs first
+                        links.push({
+                            source: edge.tail,
+                            target: edge.head
+                        });
                     }
                 });
             }
@@ -124,14 +124,20 @@ class D3GraphRenderer {
         // Update links
         const links = this.linksGroup
             .selectAll("line")
-            .data(this.links, d => `${d.source.id || d.source}-${d.target.id || d.target}`);
+            .data(this.links);
 
+        // Remove old links
         links.exit().remove();
 
+        // Add new links
         const linksEnter = links.enter()
             .append("line")
             .style("stroke", "#e0e0e0")
             .style("stroke-width", 1);
+
+        // Merge existing and new links
+        this.linksGroup.selectAll("line")
+            .data(this.links);
 
         // Update nodes
         const nodes = this.nodesGroup
