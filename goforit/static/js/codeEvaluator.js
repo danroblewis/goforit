@@ -168,10 +168,16 @@ export class CodeEvaluator {
             <option value="300000">5m</option>
         `;
         this.timerSelect.addEventListener('change', () => this.updateTimer());
-        
-        // Start with 10s timer
-        this.updateTimer();
         document.body.appendChild(this.timerSelect);
+        
+        // Start with 10s timer, but wait until we have code to run
+        this.loadLastCode().then(lastCode => {
+            if (lastCode) {
+                this.currentCode = lastCode.code;
+                this.currentLanguage = lastCode.language;
+                this.updateTimer();
+            }
+        });
     }
 
     updateTimer() {
