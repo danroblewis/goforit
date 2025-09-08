@@ -11,6 +11,11 @@ async function parseDot(dotSource) {
     const jsonStr = await graphviz.layout(dotSource, "json0");
     const data = JSON.parse(jsonStr);
 
+    // Get the bounding box
+    const [left, top, right, bottom] = data.bb.split(',').map(Number);
+    const width = right - left;
+    const height = bottom - top;
+
     // Extract nodes with their positions
     const nodes = data.objects.map(obj => {
         const [x, y] = obj.pos.split(',').map(Number);
@@ -33,24 +38,43 @@ async function parseDot(dotSource) {
         target: nodes[nodeMap.get(edge.head)]
     }));
 
-    return { nodes, edges };
+    return { nodes, edges, width, height };
 }
 
 function createGraph(container, data) {
     // Clear any existing content
     container.innerHTML = '';
 
-    const width = container.clientWidth;
-    const height = container.clientHeight || 400;
-
-    // Create SVG
+    // Create SVG with the size from Graphviz
     const svg = d3.select(container)
         .append('svg')
-        .attr('width', width)
-        .attr('height', height);
+        .attr('width', '100%')
+        .attr('height', '100%')
+        .attr('viewBox', `0 0 ${data.width} ${data.height}`);
+
+    // Create a group for zoom/pan
+    const g = svg.append('g');
+
+    // Add zoom behavior
+    const zoom = d3.zoom()
+        .scaleExtent([0.1, 10])
+        .on('zoom', (event) => {
+            g.attr('transform', event.transform);
+        });
+
+    svg.call(zoom);
+
+    // Center the initial view
+    const initialScale = 0.9;
+    const centerX = data.width / 2;
+    const centerY = data.height / 2;
+    svg.call(zoom.transform, d3.zoomIdentity
+        .translate(container.clientWidth/2, container.clientHeight/2)
+        .scale(initialScale)
+        .translate(-centerX, -centerY));
 
     // Add edges
-    const edges = svg.append('g')
+    const edges = g.append('g')
         .selectAll('line')
         .data(data.edges)
         .join('line')
@@ -63,7 +87,7 @@ function createGraph(container, data) {
         .attr('y2', d => d.target.y);
 
     // Add nodes
-    const nodes = svg.append('g')
+    const nodes = g.append('g')
         .selectAll('g')
         .data(data.nodes)
         .join('g')
