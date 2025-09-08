@@ -21,16 +21,20 @@ async function parseDot(dotSource) {
 
         // Extract fillcolor if it exists, default to white
         let fillcolor = '#fff';
-        if (obj.style && obj.style.includes('filled') && obj.fillcolor) {
+        if (obj.fillcolor) {
             fillcolor = obj.fillcolor;
         }
+
+        // Use explicit label if provided, otherwise use name
+        const label = obj.label === '\\N' ? obj.name : (obj.label || obj.name);
 
         return {
             id: obj.name,
             // Use saved position if available, otherwise use Graphviz position
             x: savedPos ? savedPos.x : x,
             y: savedPos ? savedPos.y : y,
-            fillcolor: fillcolor
+            fillcolor: fillcolor,
+            label: label
         };
     });
 
@@ -91,7 +95,9 @@ function createGraph(container, data, width, height) {
     // Add circles to nodes
     nodes.append('circle')
         .attr('r', 5)
-        .style('fill', d => d.fillcolor);
+        .style('fill', d => {
+            return d.fillcolor
+        });
 
     // Add labels
     nodes.append('text')
@@ -100,7 +106,7 @@ function createGraph(container, data, width, height) {
         .style('fill', '#fff')
         .style('font-family', 'monospace')
         .style('font-size', '12px')
-        .text(d => d.id);
+        .text(d => d.label);
 
     // Create the simulation
     const simulation = d3.forceSimulation(data.nodes)
