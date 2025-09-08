@@ -4,6 +4,7 @@ import { registerHaskellLanguage } from './haskellLanguage.js';
 import { registerPrologLanguage } from './prologLanguage.js';
 import { registerRubyLanguage } from './rubyLanguage.js';
 import { registerBrainfuckLanguage } from './brainfuckLanguage.js';
+import { registerLuaLanguage } from './luaLanguage.js';
 
 export class App {
     constructor() {
@@ -25,7 +26,8 @@ export class App {
             'haskell': '/static/examples/Haskell.hs',
             'prolog': '/static/examples/Prolog.pl',
             'ruby': '/static/examples/Ruby.rb',
-            'brainfuck': '/static/examples/Brainfuck.bf'
+            'brainfuck': '/static/examples/Brainfuck.bf',
+            'lua': '/static/examples/Lua.lua'
         };
     }
 
@@ -46,6 +48,7 @@ export class App {
                     registerPrologLanguage(monaco);
                     registerRubyLanguage(monaco);
                     registerBrainfuckLanguage(monaco);
+                    registerLuaLanguage(monaco);
                     resolve();
                 });
             };
@@ -71,6 +74,8 @@ export class App {
                 return 'ruby';
             case 'brainfuck':
                 return 'brainfuck';
+            case 'lua':
+                return 'lua';
             default:
                 return selectedLanguage;
         }
