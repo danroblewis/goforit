@@ -1,5 +1,7 @@
 import { formatHexdump } from './hexdumpHighlighter.js';
 import { highlightAssembly } from './assemblyHighlighter.js';
+import { renderGraphviz } from './graphvizRenderer.js';
+import { renderD3Graph } from './d3GraphRenderer.js';
 
 function escapeHtml(unsafe) {
     return unsafe
@@ -45,6 +47,18 @@ function createCollapsibleSection(title, content, language) {
         contentDiv.innerHTML = highlightAssembly(content);
     } else if (language === 'hexdump-binary') {
         contentDiv.innerHTML = formatHexdump(content);
+    } else if (language === 'graphviz') {
+        // Use D3 force-directed graph renderer
+        renderD3Graph(content).then(element => {
+            contentDiv.innerHTML = '';
+            if (typeof element === 'string') {
+                contentDiv.innerHTML = element;
+            } else {
+                contentDiv.appendChild(element);
+            }
+        }).catch(error => {
+            contentDiv.innerHTML = `<pre class="error">Failed to render graph:\n${error.message}</pre>`;
+        });
     } else {
         contentDiv.innerHTML = `<pre>${escapeHtml(content)}</pre>`;
     }
@@ -77,6 +91,8 @@ export function renderOutput(outputDiv, result) {
                 title = `Disassembly (${output.language.replace('asm-', '')})`;
             } else if (output.language === 'hexdump-binary') {
                 title = 'Binary Hexdump';
+            } else if (output.language === 'graphviz') {
+                title = 'Graph Visualization';
             } else {
                 title = 'Additional Output';
             }

@@ -184,26 +184,47 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    background: transparent;
 }
 
+/* D3 Force-directed graph styles */
 .graph-container svg {
     background: transparent;
     max-width: 100%;
-    height: auto;
+    height: 100%;
 }
 
-.graph-container svg * {
-    color: #e0e0e0;
-    stroke: #e0e0e0;
+.graph-container .nodes circle {
     fill: #e0e0e0;
+    stroke: none;
+    transition: r 0.2s ease;
 }
 
-.graph-container svg path {
-    stroke: #e0e0e0;
+.graph-container .nodes circle:hover {
+    r: 8;
 }
 
-.graph-container svg text {
+.graph-container .nodes text {
     fill: #e0e0e0;
+    font-size: 12px;
+    pointer-events: none;
+    user-select: none;
+}
+
+.graph-container .links line {
+    stroke: #e0e0e0;
+    stroke-opacity: 0.6;
+    stroke-width: 1px;
+}
+
+/* Hover effects */
+.graph-container .nodes g:hover circle {
+    fill: #4ec9b0;
+}
+
+.graph-container .nodes g:hover text {
+    fill: #4ec9b0;
+    font-weight: bold;
 }
 
 /* Modal for large graph view */
