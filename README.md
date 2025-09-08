@@ -42,11 +42,14 @@ Options:
   - Java
   - C++
   - C
-  - C to Assembly (gcc -S output)
-  - C to Objdump (disassembled binary)
   - Assembly (x86, x86_64, ARM64)
   - Rust
   - Go
+  - Haskell
+  - Prolog
+  - Ruby
+  - Brainfuck
+  - Lua
 - **Assembly Output**: View the generated assembly code for C programs with syntax highlighting
 - **Visual Feedback**: Background color changes based on execution status
   - Dark grayish green: Successful execution with output
@@ -55,18 +58,74 @@ Options:
 - **Code Persistence**: Automatically saves and loads your last edited code
 - **Responsive Design**: Fully responsive layout that adapts to window resizing
 
-## Prerequisites
+## Dependencies Installation
 
-You'll need these installed for the languages you want to use:
-- Python 3.8 or later (required)
-- Node.js (for JavaScript/TypeScript)
-- TypeScript (`npm install -g typescript`)
-- Java Development Kit (for Java)
-- GCC (for C/C++)
-- NASM (for x86/x86_64 assembly)
-- AS (for ARM64 assembly)
-- Rust (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
-- Go (`brew install go` on macOS)
+### macOS
+
+Using Homebrew:
+```bash
+# Required base tools
+brew install python@3.11 node gcc nasm
+
+# Language-specific tools
+brew install openjdk    # Java
+brew install go        # Go
+brew install rust      # Rust
+brew install ghc cabal-install  # Haskell
+brew install swi-prolog         # Prolog
+brew install ruby              # Ruby
+brew install lua               # Lua
+
+# Install TypeScript globally
+npm install -g typescript
+
+# Link OpenJDK
+sudo ln -sfn $(brew --prefix)/opt/openjdk/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk.jdk
+```
+
+### Linux (Ubuntu/Debian)
+
+```bash
+# Update package list
+sudo apt update
+
+# Required base tools
+sudo apt install -y python3 python3-pip nodejs gcc nasm build-essential
+
+# Language-specific tools
+sudo apt install -y default-jdk        # Java
+sudo apt install -y golang-go          # Go
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh  # Rust
+sudo apt install -y ghc cabal-install  # Haskell
+sudo apt install -y swi-prolog         # Prolog
+sudo apt install -y ruby               # Ruby
+sudo apt install -y lua5.4             # Lua
+
+# Install TypeScript globally
+sudo npm install -g typescript
+```
+
+### Linux (Fedora/RHEL)
+
+```bash
+# Update package list
+sudo dnf update
+
+# Required base tools
+sudo dnf install -y python3 python3-pip nodejs gcc nasm
+
+# Language-specific tools
+sudo dnf install -y java-latest-openjdk-devel  # Java
+sudo dnf install -y golang                     # Go
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh  # Rust
+sudo dnf install -y ghc cabal-install         # Haskell
+sudo dnf install -y pl                        # Prolog
+sudo dnf install -y ruby                      # Ruby
+sudo dnf install -y lua                       # Lua
+
+# Install TypeScript globally
+sudo npm install -g typescript
+```
 
 ## Manual Installation
 
@@ -201,11 +260,14 @@ goforit/
 │   │   ├── java_runner.py
 │   │   ├── cpp_runner.py
 │   │   ├── c_runner.py
-│   │   ├── c_to_asm_runner.py
-│   │   ├── c_to_objdump_runner.py
 │   │   ├── assembly_runner.py
 │   │   ├── rust_runner.py
 │   │   ├── go_runner.py
+│   │   ├── haskell_runner.py
+│   │   ├── prolog_runner.py
+│   │   ├── ruby_runner.py
+│   │   ├── brainfuck_runner.py
+│   │   ├── lua_runner.py
 │   │   └── tests/       # Runner unit tests
 │   └── static/
 │       ├── index.html   # Frontend application
@@ -215,7 +277,12 @@ goforit/
 │           ├── codeEvaluator.js
 │           ├── assemblyHighlighter.js
 │           ├── assemblyLanguage.js
-│           └── hexdumpHighlighter.js
+│           ├── hexdumpHighlighter.js
+│           ├── haskellLanguage.js
+│           ├── prologLanguage.js
+│           ├── rubyLanguage.js
+│           ├── brainfuckLanguage.js
+│           └── luaLanguage.js
 └── pyproject.toml       # Project configuration and dependencies
 ```
 
