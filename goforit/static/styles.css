@@ -137,7 +137,7 @@ body {
     min-width: 200px;
     overflow-y: auto;
     font-family: monospace;
-    color: #fff;
+    color: gainsboro;
 }
 
 .code-outputs-container {
@@ -178,7 +178,6 @@ body {
 }
 
 .program-output pre {
-    color: gainsboro;
     margin: 0;
 }
 
