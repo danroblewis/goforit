@@ -6,7 +6,9 @@ let graphviz = null;
 // Store graph state globally
 const nodePositions = new Map();
 const viewState = {
-    transform: null  // Will store d3.zoomIdentity transform
+    transform: null,  // Will store d3.zoomIdentity transform
+    linkDistance: 50, // Default link distance
+    charge: -200     // Default charge strength
 };
 
 async function parseDot(dotSource) {
@@ -86,6 +88,18 @@ function zoomToFit(svg, g, zoom, padding = 50) {
         .call(zoom.transform, transform);
 }
 
+function updateForces(simulation) {
+    simulation
+        .force('link')
+        .distance(viewState.linkDistance);
+    
+    simulation
+        .force('charge')
+        .strength(viewState.charge);
+    
+    simulation.alpha(0.3).restart();
+}
+
 function createGraph(container, data, width, height) {
     // Clear any existing content
     container.innerHTML = '';
@@ -99,9 +113,41 @@ function createGraph(container, data, width, height) {
     // Create a group for zoom/pan
     const g = svg.append('g');
 
-    // Add zoom behavior
+    // Create simulation first so we can reference it in the zoom filter
+    const simulation = d3.forceSimulation(data.nodes)
+        .force('link', d3.forceLink(data.edges)
+            .id(d => d.id)
+            .distance(viewState.linkDistance))
+        .force('charge', d3.forceManyBody()
+            .strength(viewState.charge))
+        // Stronger centering forces
+        .force('center', d3.forceCenter(width / 4, height / 2).strength(1))
+        .force('x', d3.forceX(width / 4).strength(0.3))
+        .force('y', d3.forceY(height / 4).strength(0.3));
+
+    // Add zoom behavior with filter for modifier keys
     const zoom = d3.zoom()
         .scaleExtent([0.1, 10])
+        .filter(event => {
+            // Allow force adjustments with modifier keys
+            if ((event.type === 'wheel' && (event.altKey || event.ctrlKey))) {
+                event.preventDefault();
+                const delta = event.deltaY;
+                if (event.altKey) {
+                    // Alt + Wheel: Adjust link distance
+                    viewState.linkDistance = Math.max(20, Math.min(200, viewState.linkDistance - delta * 0.1));
+                    console.log('Link distance:', viewState.linkDistance);
+                } else if (event.ctrlKey) {
+                    // Ctrl + Wheel: Adjust charge strength
+                    viewState.charge = Math.max(-1000, Math.min(-50, viewState.charge + delta));
+                    console.log('Charge strength:', viewState.charge);
+                }
+                updateForces(simulation);
+                return false;
+            }
+            // Allow regular zoom behavior otherwise
+            return (!event.ctrlKey && !event.altKey) || event.type === 'dblclick';
+        })
         .on('zoom', (event) => {
             g.attr('transform', event.transform);
             // Save the current transform
@@ -145,18 +191,6 @@ function createGraph(container, data, width, height) {
         .style('font-family', 'monospace')
         .style('font-size', '12px')
         .text(d => d.label);
-
-    // Create the simulation
-    const simulation = d3.forceSimulation(data.nodes)
-        .force('link', d3.forceLink(data.edges)
-            .id(d => d.id)
-            .distance(50))
-        .force('charge', d3.forceManyBody()
-            .strength(-200))
-        // Stronger centering forces
-        .force('center', d3.forceCenter(width / 4, height / 2).strength(1))
-        .force('x', d3.forceX(width / 4).strength(0.3))
-        .force('y', d3.forceY(height / 4).strength(0.3));
 
     // Add drag behavior
     nodes.call(d3.drag()
