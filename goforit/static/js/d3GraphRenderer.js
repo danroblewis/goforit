@@ -1,4 +1,5 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import { parse as parseDot } from "https://unpkg.com/@ts-graphviz/parser@0.6.0/lib/index.js";
 
 class D3GraphRenderer {
     constructor(container) {
@@ -43,46 +44,48 @@ class D3GraphRenderer {
     }
 
     parseDot(dotSource) {
-        // Basic DOT parser - handles simple graphs
-        const nodes = new Set();
-        const links = [];
-        
-        // Remove comments and normalize whitespace
-        const cleanDot = dotSource
-            .replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '')
-            .replace(/\s+/g, ' ')
-            .trim();
+        try {
+            const ast = parseDot(dotSource);
+            const nodes = new Set();
+            const links = [];
+            
+            // Helper to get node ID, handling both string literals and HTML-like labels
+            const getNodeId = (node) => {
+                if (node.id.type === 'HTMLString') {
+                    return node.id.value.replace(/<[^>]*>/g, '');
+                }
+                return node.id.value;
+            };
 
-        // Extract graph type and body
-        const match = cleanDot.match(/(?:di)?graph\s+(?:\w+\s+)?{([\s\S]+)}/);
-        if (!match) return { nodes: [], links: [] };
+            // Process nodes and edges from AST
+            const processStatement = (stmt) => {
+                if (stmt.type === 'Node') {
+                    nodes.add(getNodeId(stmt));
+                } else if (stmt.type === 'Edge') {
+                    // Handle edge lists (a->b->c becomes a->b, b->c)
+                    for (let i = 0; i < stmt.edge_list.length - 1; i++) {
+                        const source = getNodeId(stmt.edge_list[i]);
+                        const target = getNodeId(stmt.edge_list[i + 1]);
+                        nodes.add(source);
+                        nodes.add(target);
+                        links.push({ source, target });
+                    }
+                } else if (stmt.type === 'Subgraph') {
+                    stmt.statements.forEach(processStatement);
+                }
+            };
 
-        const body = match[1];
-        
-        // Parse node definitions and edges
-        const statements = body.split(';').map(s => s.trim()).filter(s => s);
-        
-        for (const stmt of statements) {
-            if (stmt.includes('->') || stmt.includes('--')) {
-                // Edge definition
-                const parts = stmt.split(/->|--/);
-                const source = parts[0].trim();
-                const target = parts[1].trim();
-                
-                nodes.add(source);
-                nodes.add(target);
-                links.push({ source, target });
-            } else if (!stmt.includes('=')) {
-                // Node definition
-                const node = stmt.trim();
-                if (node) nodes.add(node);
-            }
+            // Process all statements in the graph
+            ast.children.forEach(processStatement);
+
+            return {
+                nodes: Array.from(nodes).map(id => ({ id })),
+                links
+            };
+        } catch (error) {
+            console.error('Failed to parse DOT:', error);
+            return { nodes: [], links: [] };
         }
-
-        return {
-            nodes: Array.from(nodes).map(id => ({ id })),
-            links
-        };
     }
 
     updateGraph(dotSource) {
