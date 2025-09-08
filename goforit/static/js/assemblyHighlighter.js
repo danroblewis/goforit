@@ -12,6 +12,11 @@ export function highlightAssembly(text) {
             return line;
         }
 
+        // Handle objdump style disassembly
+        if (line.match(/^[0-9a-f]+:/i)) {  // Lines starting with hex address
+            return highlightObjdump(line);
+        }
+
         // Handle Java bytecode output
         if (line.match(/^\s*[0-9]+:/)) {  // Lines starting with instruction offsets
             return highlightJavaBytecode(line);
@@ -73,6 +78,56 @@ export function highlightAssembly(text) {
 
         return line;
     }).join('\n');
+}
+
+function highlightObjdump(line) {
+    // Match the components of an objdump line:
+    // 1. Address
+    // 2. Machine code
+    // 3. Instruction and operands
+    const match = line.match(/^([0-9a-f]+):\s+([0-9a-f]+)\s+(.+)$/i);
+    if (match) {
+        const [, address, machineCode, instruction] = match;
+        
+        // Start with the address in a different color
+        let result = `<span class="asm-number">${address}:</span> `;
+        
+        // Add the machine code in a muted color
+        result += `<span class="asm-comment">${machineCode}</span>\t`;
+        
+        // Process the instruction part using the standard assembly highlighting
+        let instrPart = instruction;
+        
+        // Highlight the mnemonic (first word)
+        const mnemonicMatch = instrPart.match(/^\s*(\w+)/);
+        if (mnemonicMatch) {
+            const mnemonic = mnemonicMatch[1];
+            instrPart = instrPart.replace(mnemonic, `<span class="asm-mnemonic">${mnemonic}</span>`);
+        }
+        
+        // Highlight registers
+        instrPart = instrPart.replace(/\b(x[0-9]|x1[0-9]|x2[0-9]|x30|w[0-9]|w1[0-9]|w2[0-9]|w30|sp|pc|xzr|wzr)\b/g, 
+            '<span class="asm-register">$1</span>');
+        
+        // Highlight immediate values and addresses
+        instrPart = instrPart.replace(/(#-?0x[0-9a-f]+|#-?\d+|\[.*?\])/gi, 
+            '<span class="asm-number">$1</span>');
+        
+        result += instrPart;
+        return result;
+    }
+    
+    // If it's a function label or other special line, highlight appropriately
+    if (line.match(/^[0-9a-f]+ <.*>:$/i)) {
+        return `<span class="asm-label">${line}</span>`;
+    }
+    
+    // For section headers or other informational lines
+    if (line.startsWith('Disassembly of section') || line.includes('file format')) {
+        return `<span class="asm-directive">${line}</span>`;
+    }
+    
+    return line;
 }
 
 function highlightJavaBytecode(line) {
