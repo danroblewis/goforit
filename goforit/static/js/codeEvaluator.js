@@ -1,6 +1,5 @@
 import { formatHexdump } from './hexdumpHighlighter.js';
 import { highlightAssembly } from './assemblyHighlighter.js';
-import { renderGraphviz } from './graphvizRenderer.js';
 import { renderD3Graph } from './d3GraphRenderer.js';
 
 function escapeHtml(unsafe) {
@@ -149,9 +148,52 @@ export class CodeEvaluator {
     constructor() {
         this.currentEvaluation = null;
         this.evaluationCount = 0;
+        this.timerInterval = null;
+        this.currentCode = null;
+        this.currentLanguage = null;
+
+        // Create and add timer select
+        this.timerSelect = document.createElement('select');
+        this.timerSelect.className = 'timer-select';
+        this.timerSelect.innerHTML = `
+            <option value="">No Auto-Run</option>
+            <option value="1000">1s</option>
+            <option value="5000">5s</option>
+            <option value="15000">15s</option>
+            <option value="30000">30s</option>
+            <option value="60000">1m</option>
+            <option value="120000">2m</option>
+            <option value="180000">3m</option>
+            <option value="300000">5m</option>
+        `;
+        this.timerSelect.addEventListener('change', () => this.updateTimer());
+        document.body.appendChild(this.timerSelect);
+    }
+
+    updateTimer() {
+        // Clear existing timer
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+
+        // Get selected interval
+        const interval = parseInt(this.timerSelect.value);
+        if (!interval) return;
+
+        // Set new timer if we have code to run
+        if (this.currentCode !== null && this.currentLanguage !== null) {
+            this.timerInterval = setInterval(() => {
+                this.queueEvaluation(this.currentCode, this.currentLanguage);
+            }, interval);
+        }
     }
 
     async queueEvaluation(code, language) {
+        // Store current code and language
+        this.currentCode = code;
+        this.currentLanguage = language;
+
         // Increment evaluation count
         const thisEvaluation = ++this.evaluationCount;
 
@@ -162,12 +204,11 @@ export class CodeEvaluator {
                 body: JSON.stringify({ code, language })
             });
 
-        const result = await response.json();
-        result.isLatest = (thisEvaluation === this.evaluationCount);
-        return result;
+            const result = await response.json();
+            result.isLatest = (thisEvaluation === this.evaluationCount);
+            return result;
         } catch (error) {
             console.error('Evaluation failed:', error);
-            // Still return null on error to avoid rendering
             return null;
         }
     }
