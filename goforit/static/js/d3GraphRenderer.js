@@ -5,77 +5,60 @@ class D3GraphRenderer {
     constructor(container) {
         this.container = container;
         this.width = container.clientWidth;
-        this.height = container.clientHeight;
-        this.nodePositions = new Map(); // Store positions between updates
-        this.simulation = null;
-        this.svg = null;
-        this.zoom = null;
-        this.nodes = [];
-        this.links = [];
-        
-        this.initializeSVG();
-        this.setupZoom();
-    }
+        this.height = container.clientHeight || 400;
 
-    initializeSVG() {
-        // Create SVG element with zoom/pan group
-        this.svg = d3.select(this.container)
+        // Create SVG
+        this.svg = d3.select(container)
             .append("svg")
             .attr("width", "100%")
             .attr("height", "100%")
-            .style("background", "transparent");
+            .attr("viewBox", [0, 0, this.width, this.height]);
 
-        // Add a group for zoom/pan transforms
+        // Add zoom behavior
+        this.svg.call(d3.zoom()
+            .extent([[0, 0], [this.width, this.height]])
+            .scaleExtent([0.1, 8])
+            .on("zoom", ({transform}) => {
+                this.g.attr("transform", transform);
+            }));
+
+        // Create main group for zoom/pan
         this.g = this.svg.append("g");
-        
-        // Add groups for edges and nodes
-        this.linksGroup = this.g.append("g").attr("class", "links");
-        this.nodesGroup = this.g.append("g").attr("class", "nodes");
+
+        // Create groups for links and nodes
+        this.links = this.g.append("g").attr("class", "links");
+        this.nodes = this.g.append("g").attr("class", "nodes");
+
+        // Initialize simulation
+        this.simulation = d3.forceSimulation()
+            .force("charge", d3.forceManyBody().strength(-800))
+            .force("center", d3.forceCenter(this.width / 2, this.height / 2))
+            .force("x", d3.forceX(this.width / 2).strength(0.1))
+            .force("y", d3.forceY(this.height / 2).strength(0.1))
+            .force("link", d3.forceLink().distance(150).strength(1));
     }
 
-    setupZoom() {
-        this.zoom = d3.zoom()
-            .scaleExtent([0.1, 4])
-            .on("zoom", (event) => {
-                this.g.attr("transform", event.transform);
-            });
-
-        this.svg.call(this.zoom);
-    }
-
-    async parseDot(dotSource) {
+    async render(dotSource) {
         try {
-            // Initialize Graphviz if not already done
+            // Initialize Graphviz if needed
             if (!this.graphviz) {
                 this.graphviz = await Graphviz.load();
             }
 
-            // Parse the DOT source into JSON
+            // Parse DOT to JSON
             const jsonStr = await this.graphviz.layout(dotSource, "json0");
             const graphData = JSON.parse(jsonStr);
 
-            // Extract nodes and edges from the JSON
-            const nodes = new Set();
+            // Extract nodes and edges
+            const nodeSet = new Set();
             const links = [];
 
-            // Process nodes
-            if (graphData.objects) {
-                graphData.objects.forEach(obj => {
-                    if (obj.name) {
-                        nodes.add(obj.name);
-                    }
-                });
-            }
-
-            // Create node objects first
-            const nodeObjects = Array.from(nodes).map(id => ({ id }));
-            const nodeMap = new Map(nodeObjects.map(node => [node.id, node]));
-
-            // Process edges using node objects
+            // Collect nodes from edges first
             if (graphData.edges) {
                 graphData.edges.forEach(edge => {
                     if (edge.tail && edge.head) {
-                        // Store edges with IDs first
+                        nodeSet.add(edge.tail);
+                        nodeSet.add(edge.head);
                         links.push({
                             source: edge.tail,
                             target: edge.head
@@ -84,127 +67,94 @@ class D3GraphRenderer {
                 });
             }
 
-            return {
-                nodes: nodeObjects,
-                links
-            };
-        } catch (error) {
-            console.error('Failed to parse DOT:', error);
-            return { nodes: [], links: [] };
-        }
-    }
-
-    async updateGraph(dotSource) {
-        const { nodes, links } = await this.parseDot(dotSource);
-        
-        // Store old positions
-        this.nodes.forEach(node => {
-            if (node.x && node.y) {
-                this.nodePositions.set(node.id, { x: node.x, y: node.y });
-            }
-        });
-
-        // Update data
-        this.nodes = nodes;
-        this.links = links;
-
-        // Restore positions for existing nodes
-        this.nodes.forEach(node => {
-            const pos = this.nodePositions.get(node.id);
-            if (pos) {
-                node.x = pos.x;
-                node.y = pos.y;
-            }
-        });
-
-        this.renderGraph();
-    }
-
-    renderGraph() {
-        // Update links
-        const links = this.linksGroup
-            .selectAll("line")
-            .data(this.links);
-
-        // Remove old links
-        links.exit().remove();
-
-        // Add new links
-        const linksEnter = links.enter()
-            .append("line")
-            .style("stroke", "#e0e0e0")
-            .style("stroke-width", 1);
-
-        // Merge existing and new links
-        this.linksGroup.selectAll("line")
-            .data(this.links);
-
-        // Update nodes
-        const nodes = this.nodesGroup
-            .selectAll("g")
-            .data(this.nodes, d => d.id);
-
-        nodes.exit().remove();
-
-        const nodesEnter = nodes.enter()
-            .append("g")
-            .call(d3.drag()
-                .on("start", this.dragstarted.bind(this))
-                .on("drag", this.dragged.bind(this))
-                .on("end", this.dragended.bind(this)));
-
-        nodesEnter.append("circle")
-            .attr("r", 5)
-            .style("fill", "#e0e0e0");
-
-        nodesEnter.append("text")
-            .attr("dx", 12)
-            .attr("dy", ".35em")
-            .style("fill", "#e0e0e0")
-            .text(d => d.id);
-
-        // Set up or update force simulation
-        if (!this.simulation) {
-            this.simulation = d3.forceSimulation()
-                .force("link", d3.forceLink().id(d => d.id).distance(100))
-                .force("charge", d3.forceManyBody().strength(-100))
-                .force("center", d3.forceCenter(this.width / 2, this.height / 2))
-                .on("tick", () => {
-                    this.linksGroup.selectAll("line")
-                        .attr("x1", d => d.source.x)
-                        .attr("y1", d => d.source.y)
-                        .attr("x2", d => d.target.x)
-                        .attr("y2", d => d.target.y);
-
-                    this.nodesGroup.selectAll("g")
-                        .attr("transform", d => `translate(${d.x},${d.y})`);
+            // Add any standalone nodes
+            if (graphData.objects) {
+                graphData.objects.forEach(obj => {
+                    if (obj.name) {
+                        nodeSet.add(obj.name);
+                    }
                 });
+            }
+
+            const nodes = Array.from(nodeSet).map(id => ({id}));
+
+            // Update links
+            const linkElements = this.links
+                .selectAll("line")
+                .data(links)
+                .join("line")
+                .attr("stroke", "#e0e0e0")
+                .attr("stroke-width", 1)
+                .attr("stroke-opacity", 0.6);
+
+            // Update nodes
+            const nodeElements = this.nodes
+                .selectAll("g")
+                .data(nodes, d => d.id)
+                .join("g")
+                .call(this.drag());
+
+            // Clear old elements
+            nodeElements.selectAll("*").remove();
+
+            // Add circles to nodes
+            nodeElements.append("circle")
+                .attr("r", 6)
+                .attr("fill", "#e0e0e0");
+
+            // Add labels to nodes
+            nodeElements.append("text")
+                .attr("x", 10)
+                .attr("y", 3)
+                .text(d => d.id)
+                .attr("fill", "#e0e0e0")
+                .style("font-family", "monospace")
+                .style("font-size", "12px");
+
+            // Update simulation
+            this.simulation
+                .nodes(nodes)
+                .force("link")
+                .links(links);
+
+            // Update positions on tick
+            this.simulation.on("tick", () => {
+                linkElements
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+
+                nodeElements
+                    .attr("transform", d => `translate(${d.x},${d.y})`);
+            });
+
+            // Restart simulation
+            this.simulation.alpha(1).restart();
+
+        } catch (error) {
+            console.error("Failed to render graph:", error);
         }
-
-        // Update simulation with new data
-        this.simulation.nodes(this.nodes);
-        this.simulation.force("link").links(this.links);
-        this.simulation.alpha(1).restart();
     }
 
-    dragstarted(event) {
-        if (!event.active) this.simulation.alphaTarget(0.3).restart();
-        event.subject.fx = event.subject.x;
-        event.subject.fy = event.subject.y;
+    drag() {
+        return d3.drag()
+            .on("start", (event, d) => {
+                if (!event.active) this.simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            })
+            .on("drag", (event, d) => {
+                d.fx = event.x;
+                d.fy = event.y;
+            })
+            .on("end", (event, d) => {
+                if (!event.active) this.simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            });
     }
 
-    dragged(event) {
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
-    }
-
-    dragended(event) {
-        if (!event.active) this.simulation.alphaTarget(0);
-        event.subject.fx = null;
-        event.subject.fy = null;
-    }
-
-    // Clean up resources
     destroy() {
         if (this.simulation) {
             this.simulation.stop();
@@ -220,16 +170,16 @@ export async function renderD3Graph(dotSource) {
         const container = document.createElement('div');
         container.className = 'graph-container';
         container.style.width = '100%';
-        container.style.height = '400px'; // Fixed height for the graph
+        container.style.height = '400px';
 
         const renderer = new D3GraphRenderer(container);
-        renderer.updateGraph(dotSource);
+        await renderer.render(dotSource);
 
-        // Store renderer instance on the container for cleanup
+        // Store renderer instance for cleanup
         container._renderer = renderer;
 
         // Add click handler for modal view
-        container.addEventListener('click', (e) => {
+        container.addEventListener('click', async (e) => {
             const modalContainer = document.createElement('div');
             modalContainer.className = 'graph-modal';
             modalContainer.innerHTML = `
@@ -265,16 +215,7 @@ export async function renderD3Graph(dotSource) {
             modalGraph.style.height = '100%';
             
             const modalRenderer = new D3GraphRenderer(modalGraph);
-            modalRenderer.updateGraph(dotSource);
-            
-            // Copy current node positions to modal view
-            renderer.nodes.forEach(node => {
-                const modalNode = modalRenderer.nodes.find(n => n.id === node.id);
-                if (modalNode && node.x && node.y) {
-                    modalNode.x = node.x;
-                    modalNode.y = node.y;
-                }
-            });
+            await modalRenderer.render(dotSource);
 
             modalContainer.classList.add('visible');
             e.stopPropagation();
