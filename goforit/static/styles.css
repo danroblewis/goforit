@@ -27,7 +27,7 @@
 }
 
 .examples-button {
-    position: absolute;
+    position: fixed;
     top: 10px;
     right: 10px;
     padding: 5px 10px;
@@ -46,7 +46,7 @@
 }
 
 .examples-menu {
-    position: absolute;
+    position: fixed;
     top: 40px;
     right: 10px;
     background-color: rgba(40, 40, 40, 0.95);
@@ -163,7 +163,8 @@
 .asm-section { color: #569cd6; }
 
 /* Hexdump highlighting */
-.hexdump-addr { color: #9cdcfe; }
-.hexdump-hex { color: #ce9178; }
-.hexdump-ascii { color: #4ec9b0; }
-.hexdump-separator { color: #808080; }
+.hexdump-addr { color: #7e57c2; }  /* Purple for addresses */
+.hexdump-hex { color: #66bb6a; }   /* Green for non-zero hex bytes */
+.hexdump-zero { color: #666666; }  /* Dim gray for zero bytes and * lines */
+.hexdump-ascii { color: #64b5f6; } /* Blue for printable ASCII */
+.hexdump-dot { color: #666666; }   /* Dim gray for dots (non-printable) */
