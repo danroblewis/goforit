@@ -3,6 +3,9 @@ import { Graphviz } from "./node_modules/@hpcc-js/wasm/dist/index.js";
 
 let graphviz = null;
 
+// Store node positions globally
+const nodePositions = new Map();
+
 async function parseDot(dotSource) {
     if (!graphviz) {
         graphviz = await Graphviz.load();
@@ -14,11 +17,12 @@ async function parseDot(dotSource) {
     // Extract nodes with their positions
     const nodes = data.objects.map(obj => {
         const [x, y] = obj.pos.split(',').map(Number);
+        const savedPos = nodePositions.get(obj.name);
         return {
             id: obj.name,
-            // Set initial position from Graphviz
-            x: x,
-            y: y
+            // Use saved position if available, otherwise use Graphviz position
+            x: savedPos ? savedPos.x : x,
+            y: savedPos ? savedPos.y : y
         };
     });
 
@@ -119,7 +123,7 @@ function createGraph(container, data, width, height) {
             d.fy = null;
         }));
 
-    // Update positions on each tick
+    // Update positions on each tick and save them
     simulation.on('tick', () => {
         edges
             .attr('x1', d => d.source.x)
@@ -128,10 +132,15 @@ function createGraph(container, data, width, height) {
             .attr('y2', d => d.target.y);
 
         nodes.attr('transform', d => `translate(${d.x},${d.y})`);
+
+        // Save current positions
+        data.nodes.forEach(node => {
+            nodePositions.set(node.id, { x: node.x, y: node.y });
+        });
     });
 
-    // Start with a higher alpha to let the centering forces take effect
-    simulation.alpha(0.5).restart();
+    // Start with a very low alpha since we might be using saved positions
+    simulation.alpha(0.1).restart();
 
     return simulation;
 }
@@ -163,7 +172,7 @@ export async function renderD3Graph(dotSource) {
         document.body.removeChild(measureDiv);
 
         // Create the graph with measured dimensions
-        const simulation = createGraph(container, data, width, height);
+        const simulation = createGraph(container, data, width/2, height);
 
         // Store simulation for cleanup
         container._simulation = simulation;
