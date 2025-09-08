@@ -14,48 +14,66 @@
     position: relative;
 }
 
+#editor {
+    flex: 1;
+    min-height: 200px;
+}
+
 .language-selector {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    padding: 5px;
-    background-color: rgba(68, 68, 68, 0.7);
+    width: 100%;
+    padding: 10px;
+    background-color: transparent;
     color: #fff;
-    border: 1px solid rgba(102, 102, 102, 0.7);
-    border-radius: 4px;
-    z-index: 10;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.language-selector:hover {
+    background-color: rgba(68, 68, 68, 0.3);
+}
+
+.language-selector option {
+    background-color: #1e1e1e;
+    color: #fff;
 }
 
 .examples-button {
     position: fixed;
     top: 10px;
-    right: 10px;
+    right: -80px;
     padding: 5px 10px;
-    background-color: rgba(68, 68, 68, 0.7);
+    background-color: rgba(68, 68, 68, 0.3);
     color: #fff;
-    border: 1px solid rgba(102, 102, 102, 0.7);
-    border-radius: 4px;
+    border: none;
+    border-radius: 4px 0 0 4px;
     cursor: pointer;
     z-index: 10;
     font-family: system-ui, -apple-system, sans-serif;
     font-size: 12px;
+    transition: right 0.3s ease, background-color 0.2s ease;
 }
 
 .examples-button:hover {
+    right: 0;
     background-color: rgba(85, 85, 85, 0.7);
 }
 
 .examples-menu {
     position: fixed;
     top: 40px;
-    right: 10px;
+    right: 0;
     background-color: rgba(40, 40, 40, 0.95);
-    border: 1px solid rgba(102, 102, 102, 0.7);
-    border-radius: 4px;
+    border: none;
+    border-radius: 4px 0 0 4px;
     padding: 5px 0;
     display: none;
     z-index: 10;
     min-width: 150px;
+    transition: right 0.3s ease;
 }
 
 .examples-menu.visible {
@@ -74,38 +92,45 @@
     background-color: rgba(85, 85, 85, 0.7);
 }
 
-#editor {
-    flex: 1;
-    min-height: 200px;
-}
-
 .output-container {
     flex: 1;
     min-width: 200px;
-    padding: 10px;
     overflow-y: auto;
     font-family: monospace;
     color: #fff;
+}
+
+.code-outputs-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 5px;
 }
 
 .code-output-block {
     white-space: pre;
     word-break: keep-all;
     overflow-x: auto;
-    margin-bottom: 10px;
-    padding: 10px;
     background: linear-gradient(180deg, 
         rgba(0, 0, 0, 0.0) 0%,
         rgba(0, 0, 0, 0.0) 50%,
         rgba(0, 0, 0, 0.1) 100%
     );
     border-radius: 4px;
+    flex: 1;
+}
+
+.code-output-block.expanded {
+    flex-basis: 100%;
+    margin: 10px 0;
+    padding: 10px;
 }
 
 .program-output {
     margin-bottom: 10px;
     padding: 10px;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.1);
     border-radius: 4px;
     white-space: pre;
     word-break: keep-all;
@@ -127,9 +152,10 @@
     display: flex;
     align-items: center;
     cursor: pointer;
-    margin-bottom: 0;
+    padding: 5px 10px;
     opacity: 0.7;
     user-select: none;
+    white-space: nowrap;
 }
 
 .collapsible-header:hover {
@@ -137,28 +163,20 @@
 }
 
 .collapsible-title {
-    flex: 1;
     color: #9cdcfe;
 }
 
-.collapsible-title::after {
-    content: '▼';
-    margin-left: 5px;
-    font-size: 0.8em;
-}
-
-.collapsible-content:not(.collapsed) + .collapsible-title::after {
-    content: '▲';
-}
-
 .collapsible-content {
-    transition: max-height 0.2s ease-out;
-    overflow: hidden;
-    padding: 0 5px;
+    display: none;
+    padding: 10px;
 }
 
-.collapsible-content.collapsed {
-    max-height: 0;
+.code-output-block:not(.expanded) .collapsible-content {
+    display: none;
+}
+
+.code-output-block.expanded .collapsible-content {
+    display: block;
 }
 
 /* Assembly and Bytecode syntax highlighting */
