@@ -107,9 +107,10 @@ function createGraph(container, data) {
             .distance(50))
         .force('charge', d3.forceManyBody()
             .strength(-200))
-        .force('center', d3.forceCenter(data.width / 2, data.height / 2))
-        .force('x', d3.forceX(data.width / 2).strength(0.1))
-        .force('y', d3.forceY(data.height / 2).strength(0.1));
+        // Stronger centering forces
+        .force('center', d3.forceCenter(data.width / 2, data.height / 2).strength(1))
+        .force('x', d3.forceX(data.width / 2).strength(0.3))
+        .force('y', d3.forceY(data.height / 2).strength(0.3));
 
     // Add drag behavior
     nodes.call(d3.drag()
@@ -139,8 +140,8 @@ function createGraph(container, data) {
         nodes.attr('transform', d => `translate(${d.x},${d.y})`);
     });
 
-    // Start with a low alpha to gently adjust from Graphviz positions
-    simulation.alpha(0.3).restart();
+    // Start with a higher alpha to let the centering forces take effect
+    simulation.alpha(0.5).restart();
 
     return simulation;
 }
