@@ -9,6 +9,7 @@ from .typescript_runner import run_typescript
 from .rust_runner import run_rust
 from .haskell_runner import run_haskell
 from .prolog_runner import run_prolog
+from .ruby_runner import run_ruby
 from .utils import detect_system_arch, format_binary_for_hexdump
 from .base import CodeResult, CodeOutput
 
@@ -24,4 +25,5 @@ LANGUAGE_RUNNERS = {
     'rust': run_rust,
     'haskell': run_haskell,
     'prolog': run_prolog,
+    'ruby': run_ruby,
 }

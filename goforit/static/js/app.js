@@ -2,6 +2,7 @@ import { CodeEvaluator, updateBackgroundColor, renderOutput, clearCollapsedState
 import { registerAssemblyLanguage } from './assemblyLanguage.js';
 import { registerHaskellLanguage } from './haskellLanguage.js';
 import { registerPrologLanguage } from './prologLanguage.js';
+import { registerRubyLanguage } from './rubyLanguage.js';
 
 export class App {
     constructor() {
@@ -21,7 +22,8 @@ export class App {
             'rust': '/static/examples/Rust.rs',
             'go': '/static/examples/Go.go',
             'haskell': '/static/examples/Haskell.hs',
-            'prolog': '/static/examples/Prolog.pl'
+            'prolog': '/static/examples/Prolog.pl',
+            'ruby': '/static/examples/Ruby.rb'
         };
     }
 
@@ -40,6 +42,7 @@ export class App {
                     registerAssemblyLanguage(monaco);
                     registerHaskellLanguage(monaco);
                     registerPrologLanguage(monaco);
+                    registerRubyLanguage(monaco);
                     resolve();
                 });
             };
@@ -61,6 +64,8 @@ export class App {
                 return 'haskell';
             case 'prolog':
                 return 'prolog';
+            case 'ruby':
+                return 'ruby';
             default:
                 return selectedLanguage;
         }
