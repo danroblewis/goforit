@@ -11,33 +11,29 @@ async function parseDot(dotSource) {
     const jsonStr = await graphviz.layout(dotSource, "json0");
     const data = JSON.parse(jsonStr);
 
-    const nodes = new Set();
-    const edges = [];
+    // Extract nodes with their positions
+    const nodes = data.objects.map(obj => {
+        const [x, y] = obj.pos.split(',').map(Number);
+        return {
+            id: obj.name,
+            x: x,
+            y: y,
+            // Fix the position that Graphviz calculated
+            fx: x,
+            fy: y
+        };
+    });
 
-    // Get nodes from edges first
-    if (data.edges) {
-        data.edges.forEach(edge => {
-            if (edge.tail && edge.head) {
-                nodes.add(edge.tail);
-                nodes.add(edge.head);
-                edges.push({ source: edge.tail, target: edge.head });
-            }
-        });
-    }
+    // Create a map of node name to index for edge lookup
+    const nodeMap = new Map(data.objects.map((obj, i) => [obj._gvid, i]));
 
-    // Add any standalone nodes
-    if (data.objects) {
-        data.objects.forEach(obj => {
-            if (obj.name) {
-                nodes.add(obj.name);
-            }
-        });
-    }
+    // Extract edges using the node indices
+    const edges = data.edges.map(edge => ({
+        source: nodes[nodeMap.get(edge.tail)],
+        target: nodes[nodeMap.get(edge.head)]
+    }));
 
-    return {
-        nodes: Array.from(nodes).map(id => ({ id })),
-        edges
-    };
+    return { nodes, edges };
 }
 
 function createGraph(container, data) {
@@ -53,14 +49,6 @@ function createGraph(container, data) {
         .attr('width', width)
         .attr('height', height);
 
-    // Create the simulation
-    const simulation = d3.forceSimulation(data.nodes)
-        .force('link', d3.forceLink(data.edges)
-            .id(d => d.id)
-            .distance(100))
-        .force('charge', d3.forceManyBody().strength(-400))
-        .force('center', d3.forceCenter(width / 2, height / 2));
-
     // Add edges
     const edges = svg.append('g')
         .selectAll('line')
@@ -68,13 +56,18 @@ function createGraph(container, data) {
         .join('line')
         .style('stroke', '#888')
         .style('stroke-width', 1)
-        .style('stroke-opacity', 0.6);
+        .style('stroke-opacity', 0.6)
+        .attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y);
 
     // Add nodes
     const nodes = svg.append('g')
         .selectAll('g')
         .data(data.nodes)
-        .join('g');
+        .join('g')
+        .attr('transform', d => `translate(${d.x},${d.y})`);
 
     // Add circles to nodes
     nodes.append('circle')
@@ -90,35 +83,7 @@ function createGraph(container, data) {
         .style('font-size', '12px')
         .text(d => d.id);
 
-    // Add drag behavior
-    nodes.call(d3.drag()
-        .on('start', (event, d) => {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            d.fx = d.x;
-            d.fy = d.y;
-        })
-        .on('drag', (event, d) => {
-            d.fx = event.x;
-            d.fy = event.y;
-        })
-        .on('end', (event, d) => {
-            if (!event.active) simulation.alphaTarget(0);
-            d.fx = null;
-            d.fy = null;
-        }));
-
-    // Update positions on each tick
-    simulation.on('tick', () => {
-        edges
-            .attr('x1', d => d.source.x)
-            .attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.x)
-            .attr('y2', d => d.target.y);
-
-        nodes.attr('transform', d => `translate(${d.x},${d.y})`);
-    });
-
-    return simulation;
+    return svg;
 }
 
 export async function renderD3Graph(dotSource) {
@@ -133,10 +98,7 @@ export async function renderD3Graph(dotSource) {
         const data = await parseDot(dotSource);
 
         // Create the graph
-        const simulation = createGraph(container, data);
-
-        // Store simulation for cleanup
-        container._simulation = simulation;
+        createGraph(container, data);
 
         return container;
     } catch (error) {
