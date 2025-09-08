@@ -14,15 +14,23 @@ async function parseDot(dotSource) {
     const jsonStr = await graphviz.layout(dotSource, "json0");
     const data = JSON.parse(jsonStr);
 
-    // Extract nodes with their positions
+    // Extract nodes with their positions and styles
     const nodes = data.objects.map(obj => {
         const [x, y] = obj.pos.split(',').map(Number);
         const savedPos = nodePositions.get(obj.name);
+
+        // Extract fillcolor if it exists, default to white
+        let fillcolor = '#fff';
+        if (obj.style && obj.style.includes('filled') && obj.fillcolor) {
+            fillcolor = obj.fillcolor;
+        }
+
         return {
             id: obj.name,
             // Use saved position if available, otherwise use Graphviz position
             x: savedPos ? savedPos.x : x,
-            y: savedPos ? savedPos.y : y
+            y: savedPos ? savedPos.y : y,
+            fillcolor: fillcolor
         };
     });
 
@@ -83,7 +91,7 @@ function createGraph(container, data, width, height) {
     // Add circles to nodes
     nodes.append('circle')
         .attr('r', 5)
-        .style('fill', '#fff');
+        .style('fill', d => d.fillcolor);
 
     // Add labels
     nodes.append('text')
