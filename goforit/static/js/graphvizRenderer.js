@@ -25,8 +25,15 @@ function createModal() {
         e.stopPropagation();
     };
     
-    // Close modal when clicking the background
+    // Close modal when clicking the background or pressing Escape
     modal.onclick = () => modal.classList.remove('visible');
+    
+    // Add event listener for Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('visible')) {
+            modal.classList.remove('visible');
+        }
+    });
     
     // Prevent clicks inside content from closing the modal
     content.onclick = (e) => e.stopPropagation();
