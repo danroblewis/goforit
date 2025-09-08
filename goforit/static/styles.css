@@ -177,6 +177,11 @@ body {
     overflow-x: auto;
 }
 
+.program-output pre {
+    color: gainsboro;
+    margin: 0;
+}
+
 .output-label {
     color: #4ec9b0;
     margin-bottom: 5px;
