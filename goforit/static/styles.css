@@ -171,6 +171,88 @@
     padding: 10px;
 }
 
+.code-output-block.expanded .collapsible-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Graph styling */
+.graph-container {
+    position: relative;
+    cursor: zoom-in;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.graph-container svg {
+    background: transparent;
+    max-width: 100%;
+    height: auto;
+}
+
+.graph-container svg * {
+    color: #e0e0e0;
+    stroke: #e0e0e0;
+    fill: #e0e0e0;
+}
+
+.graph-container svg path {
+    stroke: #e0e0e0;
+}
+
+.graph-container svg text {
+    fill: #e0e0e0;
+}
+
+/* Modal for large graph view */
+.graph-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    overflow: auto;
+}
+
+.graph-modal.visible {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.graph-modal-content {
+    position: relative;
+    width: 90%;
+    height: 90%;
+    overflow: auto;
+    background: #1e1e1e;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.graph-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 24px;
+    opacity: 0.7;
+}
+
+.graph-modal-close:hover {
+    opacity: 1;
+}
+
+.graph-modal svg {
+    transform-origin: 0 0;
+}
+
 .code-output-block:not(.expanded) .collapsible-content {
     display: none;
 }
