@@ -159,6 +159,7 @@ export class CodeEvaluator {
             <option value="">No Auto-Run</option>
             <option value="1000">1s</option>
             <option value="5000">5s</option>
+            <option value="10000" selected>10s</option>
             <option value="15000">15s</option>
             <option value="30000">30s</option>
             <option value="60000">1m</option>
@@ -167,6 +168,9 @@ export class CodeEvaluator {
             <option value="300000">5m</option>
         `;
         this.timerSelect.addEventListener('change', () => this.updateTimer());
+        
+        // Start with 10s timer
+        this.updateTimer();
         document.body.appendChild(this.timerSelect);
     }
 
