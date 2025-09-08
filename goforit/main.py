@@ -68,22 +68,12 @@ async def evaluate(request: CodeRequest) -> CodeResponse:
     run_time = time.time() - run_start
     
     # Convert to response model
-    response_start = time.time()
     response = CodeResponse(
         stdout=result.stdout,
         stderr=result.stderr,
         return_code=result.return_code,
         code_outputs=[CodeOutputResponse(**output.__dict__) for output in result.code_outputs]
     )
-    response_time = time.time() - response_start
-    
-    # Print timing info
-    total_time = time.time() - start_time
-    print(f"\nAPI endpoint timing:")
-    print(f"Save time:      {save_time:.3f}s")
-    print(f"Run time:       {run_time:.3f}s")
-    print(f"Response time:  {response_time:.3f}s")
-    print(f"Total time:     {total_time:.3f}s")
     
     return response
 

@@ -16,7 +16,7 @@ class CodeResult:
         self.code_outputs = code_outputs or []
 
 async def run_process(cmd: list[str], input_text: Optional[str] = None, timeout: int = 2, cwd: Optional[str] = None) -> CodeResult:
-    print(f"Running process: {cmd}")
+    print(f"Running process: {' '.join(cmd)} in {cwd}")
     try:
         process = await asyncio.create_subprocess_exec(
             *cmd,
