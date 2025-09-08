@@ -1,8 +1,13 @@
+import { formatHexdump } from './hexdumpHighlighter.js';
 import { highlightAssembly } from './assemblyHighlighter.js';
-import { highlightHexdump } from './hexdumpHighlighter.js';
 
 function escapeHtml(unsafe) {
-    return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 // Store collapsed state by section title
@@ -37,10 +42,10 @@ function createCollapsibleSection(title, content, language) {
         contentDiv.classList.add('collapsed');
     }
     
-    if (language && (language.startsWith('asm-') || language === 'asm-intel')) {
+    if (language && language.startsWith('asm-')) {
         contentDiv.innerHTML = highlightAssembly(content);
-    } else if (language === 'hexdump') {
-        contentDiv.innerHTML = highlightHexdump(content);
+    } else if (language === 'hexdump-binary') {
+        contentDiv.innerHTML = formatHexdump(content);
     } else {
         contentDiv.innerHTML = `<pre>${escapeHtml(content)}</pre>`;
     }
@@ -68,7 +73,7 @@ export function renderOutput(outputDiv, result) {
                 title = 'Assembly Output (gcc -S)';
             } else if (output.language && output.language.startsWith('asm-')) {
                 title = `Disassembly (${output.language.replace('asm-', '')})`;
-            } else if (output.language === 'hexdump') {
+            } else if (output.language === 'hexdump-binary') {
                 title = 'Binary Hexdump';
             } else {
                 title = 'Additional Output';
