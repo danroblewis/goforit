@@ -34,11 +34,11 @@ export class App {
     async loadMonaco() {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.js';
+            script.src = '/static/vendor/monaco/vs/loader.js';
             script.onload = () => {
-                require.config({ 
-                    paths: { 
-                        vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs',
+                require.config({
+                    paths: {
+                        vs: '/static/vendor/monaco/vs',
                     }
                 });
                 require(['vs/editor/editor.main'], (monaco) => {
