@@ -1,5 +1,5 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
-import { Graphviz } from "./node_modules/@hpcc-js/wasm/dist/index.js";
+import { Graphviz } from "https://cdn.jsdelivr.net/npm/@hpcc-js/wasm@2/+esm";
 
 let graphvizInstance = null;
 
